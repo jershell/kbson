@@ -17,7 +17,7 @@ buildscript {
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    id("org.jetbrains.kotlin.jvm").version("1.3.21")
+    id("org.jetbrains.kotlin.jvm").version("1.3.41")
     id("maven-publish")
     id("com.jfrog.bintray") version "1.8.4"
 }
@@ -63,16 +63,14 @@ repositories {
 dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.mongodb:mongodb-driver-async:3.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1")
-    implementation("org.mongodb:mongodb-driver-sync:3.10.2")
+    implementation("org.mongodb:bson:3.10.2")
 
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-
 
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
+
 

@@ -68,31 +68,4 @@ class DependenciesTest {
 
         assertEquals(n.reqString, res.reqString)
     }
-
-    /*   @Test
-       fun mongoConnect() {
-           val uri =
-                   "mongodb://userdb:111@localhost:32768/main?authSource=main&w=1"
-
-           val mongoClient = MongoClients.create(uri)
-           val db = mongoClient.getDatabase("main")
-           val col = db.getCollection("entity")
-
-           val expectedResult = BsonDocument().apply {
-               put("valueString", BsonString("value_string"))
-               put("valueDouble", BsonDouble(20.5))
-               put("valueFloat", BsonDouble(0.1))
-               put("valueInt", BsonInt32(42))
-           }
-
-           val d = DocumentCodec().decode(expectedResult.asBsonReader(), DecoderContext.builder().build())
-
-           col.insertOne(d)
-           val c = col.find().toList().last()
-
-           assertEquals(c["valueDouble"], d["valueDouble"])
-
-           mongoClient.close()
-       }
-    */
 }
