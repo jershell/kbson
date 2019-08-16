@@ -24,16 +24,40 @@ plugins {
 
 apply(plugin="kotlinx-serialization")
 
+group = GROUP_ID
+version = LIBRARY_VERSION_NAME
+
 tasks.bintrayUpload {
     dependsOn("publishToMavenLocal")
 }
+
+tasks.register<Jar>("sourcesAll") {
+    from(sourceSets.main.get().allSource)
+    archiveClassifier.set("sources")
+}
+
+tasks.withType<GenerateMavenPom>().configureEach {
+    val matcher = Regex("""generatePomFileFor(\w+)Publication""").matchEntire(name)
+    val publicationName = matcher?.let { it.groupValues[1] }
+    destination = file("$buildDir/poms/$publicationName-pom.xml")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            artifact(tasks["sourcesAll"])
+        }
+    }
+}
+
 
 bintray {
     user = project.property("user_name").toString()
     key = project.property("apikey").toString()
     publish = true
     override = false
-
+    setPublications("mavenJava")
     pkg.apply {
         repo = BINTRAY_REPOSITORY
         name = ARTIFACT_ID
