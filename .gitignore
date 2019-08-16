@@ -16,6 +16,7 @@
 *.nar
 *.ear
 *.zip
+!MD5SUMS.zip
 *.tar.gz
 *.rar
 
