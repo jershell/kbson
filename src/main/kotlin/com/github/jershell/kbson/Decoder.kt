@@ -1,287 +1,266 @@
 package com.github.jershell.kbson
 
 import kotlinx.serialization.*
+import kotlinx.serialization.CompositeDecoder.Companion.READ_ALL
+import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
 import kotlinx.serialization.modules.SerialModule
 import kotlinx.serialization.Decoder
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.internal.ArrayListClassDesc
+import kotlinx.serialization.internal.EnumDescriptor
 import kotlinx.serialization.internal.LinkedHashMapClassDesc
 import org.bson.*
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
-class Decoder(val document: BsonDocument, override val context: SerialModule) : NamedValueDecoder(), Decoder {
+private data class ObjectPropertiesIndexState(
+        var currentIndex: Int = -1,
+        var count: Int = 0
+)
 
-    private var state = STATE.VALUE
-    var structuresKindStack = mutableListOf<SerialKind>()
-    private val mapsStack = mutableListOf<Pair<List<String>, List<BsonValue>>>()
-    private val listStack = mutableListOf<List<BsonValue>>()
+private data class MapElement(
+        val names: List<String>,
+        val values: List<BsonValue>
+) {
+    var state: STATE = STATE.NAME
+}
+
+class Decoder(
+        private val document: BsonDocument,
+        override val context: SerialModule,
+        private val configuration: Configuration
+) : NamedValueDecoder(), Decoder {
+    private val mapStack = mutableListOf<MapElement>()
+    private val listStack = mutableListOf<BsonArray>()
+    private val objectStateStack = mutableListOf<ObjectPropertiesIndexState>()
+    var structuresKindStack = mutableListOf<StructureKind>()
 
     private fun extractField(tag: String) = tag.split(".").last()
 
-    fun BsonDocument.getByPath(path: String): BsonDocument {
-        var target = this
-        val instructions = path.split(".")
+    private fun BsonDocument.hasPath(tag: String): Boolean {
+        var container: BsonValue? = this
+        var mapIndex = 0
+        tag.split(".").forEachIndexed { index, descIdx ->
+            val type = container?.bsonType
+            val keyKind = structuresKindStack[index]
+            val key = if (keyKind == StructureKind.MAP) {
+                mapIndex++
+                mapStack[mapIndex - 1].names.get(descIdx.toInt())
+            } else descIdx
 
-        instructions.forEachIndexed { index: Int, key: String ->
-            if (instructions.lastIndex == index) {
-                return target
-            } else {
-                val kind = structuresKindStack[index]
+            if (container == null) {
+                return false
+            }
 
-                if(kind == StructureKind.MAP) {
-                    val decodedValue = decodeMapValue(target, key)
-                    if(decodedValue.isDocument) {
-                        target = decodedValue.asDocument()
-                    } else if(decodedValue.isArray) {
-                        target = BsonDocument().apply {
-                            decodedValue.asArray().forEachIndexed { idx, value ->
-                                put(idx.toString(), value)
-                            }
-                        }
-                    }
-
-                } else {
-                    if (target[key]?.isArray == true) {
-                        val arr = target.getArray(key)
-                        target = BsonDocument().apply {
-                            arr.forEachIndexed { idx, value ->
-                                put(idx.toString(), value)
-                            }
-                        }
-                    } else if (target[key]?.isDocument == true) {
-                        target = target.getDocument(key)
-                    } else {
-                        throw SerializationException("extract element is fail $path")
-                    }
-                }
-
+            container = when (type) {
+                BsonType.DOCUMENT -> container?.asDocument()?.get(key)
+                BsonType.ARRAY -> container?.asArray()?.get(key.toInt())
+                else -> throw SerializationException("input does not have value by the path $tag")
             }
         }
-        throw MissingFieldException(path)
+        return container != null
+    }
+
+    private fun BsonDocument.getValueByPath(tag: String): BsonValue {
+        var container: BsonValue = this
+        var mapIndex = 0
+        tag.split(".").forEachIndexed { index, descIdx ->
+            val type = container.bsonType
+            val keyKind = structuresKindStack[index]
+
+            // translate key map by tag[MapReadState.Value]
+            val key = if (keyKind == StructureKind.MAP) {
+                mapIndex++
+                val pos = mapIndex - 1
+                // Since map tag value has offset + 1 from map tag names
+                // but now necessary name
+                mapStack[pos].names.get(descIdx.toInt() - 1)
+            } else descIdx
+
+
+            container = when (type) {
+                BsonType.DOCUMENT -> container.asDocument().get(key) ?: throw MissingFieldException(tag)
+                BsonType.ARRAY -> container.asArray().get(key.toInt()) ?: throw MissingFieldException(tag)
+                else -> throw MissingFieldException("input does not have value by the path $tag")
+            }
+        }
+        return container
+    }
+
+    override fun decodeTaggedNotNullMark(tag: String): Boolean {
+        val hasValue = document.hasPath(tag)
+        return when {
+            hasValue -> !document.getValueByPath(tag).isNull
+            else -> false
+        }
+    }
+
+    override fun decodeTaggedEnum(tag: String, enumDescription: EnumDescriptor): Int {
+        val name = document.getValueByPath(tag).asString().value
+        val value = enumDescription.getElementIndex(name)
+        return if (value == CompositeDecoder.UNKNOWN_NAME) {
+            throw SerializationException("Enum has unknown value $name")
+        } else value
     }
 
     override fun decodeTaggedChar(tag: String): Char {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
 
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).first()
-                    STATE.VALUE -> decodeMapValue(doc, field).asSymbol().symbol.first()
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).first()
+                    STATE.VALUE -> {
+                        val r = decodeMapValue(tag)
+                        r.asSymbol().symbol.first()
+                    }
                 }
             }
-            else -> doc.getValue(field).asSymbol().symbol.first()
+            else -> document.getValueByPath(tag).asSymbol().symbol.first()
         }
     }
 
-    override fun decodeTaggedValue(tag: String): Any {
-        return super.decodeTaggedValue(tag)
-    }
-
     override fun decodeTaggedString(tag: String): String {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field)
-                    STATE.VALUE -> decodeMapValue(doc, field).asString().value
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag)
+                    STATE.VALUE -> decodeMapValue(tag).asString().value
                 }
             }
-            else -> doc.getString(field).value
+            else -> document.getValueByPath(tag).asString().value
         }
     }
 
     override fun decodeTaggedInt(tag: String): Int {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-
-                return when (state) {
-
-                    STATE.NAME -> decodeMapKey(doc, field).toInt()
-                    STATE.VALUE -> decodeMapValue(doc, field).asInt32().value
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toInt()
+                    STATE.VALUE -> decodeMapValue(tag).asInt32().value
                 }
             }
-            else -> doc.getInt32(field).value
+            else -> document.getValueByPath(tag).asInt32().value
         }
     }
 
     override fun decodeTaggedBoolean(tag: String): Boolean {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).toBoolean()
-                    STATE.VALUE -> decodeMapValue(doc, field).asBoolean().value
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toBoolean()
+                    STATE.VALUE -> decodeMapValue(tag).asBoolean().value
                 }
             }
-            else -> doc.getBoolean(field).value
+            else -> document.getValueByPath(tag).asBoolean().value
         }
     }
 
     override fun decodeTaggedDouble(tag: String): Double {
-
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).toDouble()
-                    STATE.VALUE -> decodeMapValue(doc, field).asDouble().value
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toDouble()
+                    STATE.VALUE -> decodeMapValue(tag).asDouble().value
                 }
             }
-            else -> doc.getDouble(field).value
+            else -> document.getValueByPath(tag).asDouble().value
         }
     }
 
     override fun decodeTaggedLong(tag: String): Long {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).toLong()
-                    STATE.VALUE -> decodeMapValue(doc, field).asInt64().value
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toLong()
+                    STATE.VALUE -> decodeMapValue(tag).asInt64().value
                 }
             }
-            else -> doc.getInt64(field).value
+            else -> document.getValueByPath(tag).asInt64().value
         }
     }
 
     override fun decodeTaggedFloat(tag: String): Float {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).toFloat()
-                    STATE.VALUE -> decodeMapValue(doc, field).asDouble().value.toFloat()
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toFloat()
+                    STATE.VALUE -> decodeMapValue(tag).asDouble().value.toFloat()
                 }
             }
-            else -> doc.getDouble(field).value.toFloat()
+            else -> document.getValueByPath(tag).asDouble().value.toFloat()
         }
     }
 
     override fun decodeTaggedByte(tag: String): Byte {
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).toByte()
-                    STATE.VALUE -> decodeMapValue(doc, field).asInt32().value.toByte()
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toByte()
+                    STATE.VALUE -> decodeMapValue(tag).asInt32().value.toByte()
                 }
             }
-            else -> doc.getInt32(field).value.toByte()
+            else -> document.getValueByPath(tag).asInt32().value.toByte()
         }
     }
 
     override fun decodeTaggedShort(tag: String): Short {
-
-        val doc = document.getByPath(tag)
-        val field = extractField(tag)
-
         return when {
             structuresKindStack.lastOrNull() == StructureKind.MAP -> {
-                return when (state) {
-                    STATE.NAME -> decodeMapKey(doc, field).toShort()
-                    STATE.VALUE -> decodeMapValue(doc, field).asInt32().value.toShort()
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toShort()
+                    STATE.VALUE -> decodeMapValue(tag).asInt32().value.toShort()
                 }
             }
-            else -> doc.getInt32(field).value.toShort()
+            else -> document.getValueByPath(tag).asInt32().value.toShort()
         }
-
     }
 
     fun decodeTaggedDateTime(): Long {
         val tag: String = this.currentTag
-        return document.getByPath(tag).getDateTime(extractField(tag)).value
+        return document.getValueByPath(tag).asDateTime().value
     }
 
     fun decodeTaggedDecimal128(): Decimal128 {
         val tag: String = this.currentTag
-        return document.getByPath(tag).getDecimal128(extractField(tag)).value
+        return document.getValueByPath(tag).asDecimal128().value
     }
 
     fun decodeByteArray(): ByteArray {
         val tag: String = this.currentTag
-        return document.getByPath(tag).getBinary(extractField(tag)).data
+        return document.getValueByPath(tag).asBinary().data
     }
 
     fun decodeObjectId(): ObjectId {
         val tag: String = this.currentTag
-        return document.getByPath(tag).getObjectId(extractField(tag)).value
+        return document.getValueByPath(tag).asObjectId().value
     }
 
     override fun decodeCollectionSize(desc: SerialDescriptor): Int {
-        val tag: String = this.currentTag
         return when (desc) {
-            is LinkedHashMapClassDesc -> {
-                if (structuresKindStack.lastOrNull() == desc.kind) {
-                    mapsStack.last().first.size
-                } else {
-                    document.getByPath(tag).getDocument(extractField(tag)).size
-                }
-            }
+            is LinkedHashMapClassDesc -> mapStack.last().names.size
             is ArrayListClassDesc -> listStack.last().size
             else -> super.decodeCollectionSize(desc)
         }
     }
 
     override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeDecoder {
-        val lastStructuresKind = structuresKindStack.lastOrNull()
+        structuresKindStack.add(desc.kind as StructureKind)
 
-        structuresKindStack.add(desc.kind)
+        val path = currentTagOrNull ?: ""
 
-        when (desc.kind) {
+        when (desc.kind as StructureKind) {
+            is StructureKind.CLASS -> {
+                objectStateStack.add(ObjectPropertiesIndexState(-1, desc.elementsCount))
+            }
             is StructureKind.MAP -> {
-                val path = currentTagOrNull
-
-                if (path != null) {
-                    val field = extractField(path)
-                    val doc = document.getByPath(path)
-
-                    val target = if (lastStructuresKind == StructureKind.MAP) {
-                        decodeMapValue(doc, field).asDocument()
-                    } else {
-                        doc.getDocument(field)
-                    }
-
-                    val values = mutableListOf<BsonValue>(BsonInt32(-1)).apply {
-                        addAll(target.values.toList())
-                    }
-
-                    mapsStack.add(Pair(
-                            target.keys.toList(),
-                            values
-                    ))
-                }
-
-                state = STATE.NAME
+                val nextMap = document.getValueByPath(path).asDocument()
+                mapStack.add(MapElement(
+                        names = nextMap.keys.toList(),
+                        values = listOf<BsonValue>(BsonInt32(-1)) + nextMap.values.toList()
+                ))
             }
             is StructureKind.LIST -> {
-                val path = currentTagOrNull
-                if (path != null) {
-                    val field = extractField(path)
-                    val doc = document.getByPath(path)
-                    if(lastStructuresKind == StructureKind.MAP) {
-                        listStack.add(decodeMapValue(doc, field).asArray())
-                    } else {
-                        listStack.add(doc.getArray(field))
-                    }
-                }
+                listStack.add(document.getValueByPath(path).asArray())
             }
         }
 
@@ -291,28 +270,52 @@ class Decoder(val document: BsonDocument, override val context: SerialModule) : 
     override fun endStructure(desc: SerialDescriptor) {
         structuresKindStack.removeAt(structuresKindStack.lastIndex)
 
-        if (desc.kind == StructureKind.MAP) {
-            mapsStack.removeAt(mapsStack.lastIndex)
-        } else if (desc.kind == StructureKind.LIST) {
-            listStack.removeAt(listStack.lastIndex)
+        when {
+            desc.kind == StructureKind.MAP -> mapStack.removeAt(mapStack.lastIndex)
+            desc.kind == StructureKind.LIST -> listStack.removeAt(listStack.lastIndex)
+            desc.kind == StructureKind.CLASS -> objectStateStack.removeAt(objectStateStack.lastIndex)
         }
 
+        if (structuresKindStack.lastOrNull() == StructureKind.MAP && mapStack.last().state == STATE.VALUE) {
+            mapStack.last().state = STATE.NAME
+        }
         super.endStructure(desc)
     }
 
     override fun decodeElementIndex(desc: SerialDescriptor): Int {
-        return super.decodeElementIndex(desc)
+        return when (desc.kind) {
+            StructureKind.CLASS -> decodeObjectElementIndex(desc)
+            StructureKind.MAP, StructureKind.LIST -> super.decodeElementIndex(desc)
+            else -> throw SerializationException("${desc.kind} unsupported")
+        }
     }
 
-    fun decodeMapKey(doc: BsonDocument, field: String): String {
-        state = STATE.VALUE
-        val idx = field.toInt()
-        return mapsStack.last().first[idx]
+    private fun decodeObjectElementIndex(desc: SerialDescriptor): Int {
+        val state = objectStateStack.last()
+        while (state.currentIndex < state.count - 1) {
+            state.currentIndex++
+            if (desc.isElementOptional(state.currentIndex)) {
+                val tag = desc.getTag(state.currentIndex)
+                if (!document.hasPath(tag)) {
+                    state.currentIndex++
+                }
+            }
+            return state.currentIndex
+        }
+        return READ_DONE
     }
 
-    fun decodeMapValue(doc: BsonDocument, field: String): BsonValue {
-        state = STATE.NAME
-        val idx = field.toInt()
-        return mapsStack.last().second[idx]
+    private fun decodeMapKey(tag: String): String {
+        val map = mapStack.last()
+        val key = extractField(tag).toInt()
+        map.state = STATE.VALUE
+        return map.names[key]
+    }
+
+    private fun decodeMapValue(tag: String): BsonValue {
+        val map = mapStack.last()
+        val key = extractField(tag).toInt()
+        map.state = STATE.NAME
+        return map.values[key]
     }
 }

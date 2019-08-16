@@ -4,6 +4,8 @@
 package com.github.jershell.kbson
 
 import com.github.jershell.kbson.models.*
+import kotlinx.serialization.MissingFieldException
+import kotlinx.serialization.SerializationException
 import org.bson.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -224,7 +226,10 @@ class KBsonTest {
 
     @Test
     fun nestedComplex() {
-        val result: NestedComplex = kBson.parse(NestedComplex.serializer(), nestedComplexDoc)
+        val result: NestedComplex = kBson.parse(
+                NestedComplex.serializer(),
+                nestedComplexDoc
+        )
         assertEquals(nestedComplex, result)
     }
 
@@ -286,8 +291,163 @@ class KBsonTest {
         val result = kBson.parse(Blob.serializer(), blobDoc)
         assertTrue(
                 Arrays.equals(expectedResult.img, result.img) &&
-                Arrays.equals(expectedResult.txt, result.txt) &&
-                Arrays.equals(expectedResult.zipFile, result.zipFile)
+                        Arrays.equals(expectedResult.txt, result.txt) &&
+                        Arrays.equals(expectedResult.zipFile, result.zipFile)
         )
+    }
+
+    @Test
+    fun optionalParse() {
+        val badDoc = BsonDocument().apply {
+            put("reqString3", BsonString("reqString3"))
+        }
+        val result = kBson.parse(OptionalClass.serializer(), badDoc)
+        assertTrue(
+                (result.reqString == "default_value1") &&
+                        (result.reqString3 == "reqString3")
+        )
+    }
+
+    @Test
+    fun optionalStringify() {
+        val data = OptionalClass(reqString3 = "foo")
+
+        val doc = BsonDocument().apply {
+            put("reqString", BsonString("default_value1"))
+            put("reqString3", BsonString("foo"))
+        }
+        val result = kBson.stringify(OptionalClass.serializer(), data)
+        assertEquals(doc, result)
+    }
+
+    @Test
+    fun exceptionsMissingValue() {
+        val docBadType = BsonDocument()
+
+        try {
+            kBson.parse(SimpleNG.serializer(), docBadType)
+        } catch (e: MissingFieldException) {
+            assertTrue(e.message == "Field 'short' is required, but it was missing")
+        }
+    }
+
+    @Test
+    fun exceptionsBadType() {
+        val docBadType = BsonDocument().apply {
+            put("short", BsonString("127"))
+        }
+
+        try {
+            kBson.parse(SimpleNG.serializer(), docBadType)
+        } catch (e: BsonInvalidOperationException) {
+            assertTrue(e.message == "Value expected to be of type INT32 is of unexpected type STRING")
+        }
+    }
+
+    @Test
+    fun nullParseTest() {
+        val docNullableField = BsonDocument().apply {
+            put("str", BsonNull())
+        }
+        val docField = BsonDocument().apply {
+            put("str", BsonString("exist"))
+        }
+
+        val result1 = kBson.parse(NullableClass.serializer(), docNullableField)
+        val result2 = kBson.parse(NullableClass.serializer(), docField)
+        assertTrue(result1.str == null && result2.str == "exist")
+    }
+
+    @Test
+    fun nullStringifyTest() {
+        val docNullableField = BsonDocument().apply {
+            put("str", BsonNull())
+        }
+
+        val modelNullableField = NullableClass(null)
+
+        val docField = BsonDocument().apply {
+            put("str", BsonString("exist"))
+        }
+
+        val modelField = NullableClass("exist")
+
+        val result1 = kBson.stringify(NullableClass.serializer(), modelNullableField)
+        val result2 = kBson.stringify(NullableClass.serializer(), modelField)
+
+        assert(
+                docNullableField.equals(result1) &&
+                        docField.equals(result2)
+        )
+    }
+
+    @Test
+    fun maps() {
+        val foo = Foo(
+                key_A = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"),
+                key_B = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"))
+
+        val doc = BsonDocument().apply {
+            put("key_A", BsonDocument().apply {
+                put("a", BsonString("a"))
+                put("b", BsonString("b"))
+                put("c", BsonString("c"))
+                put("d", BsonString("d"))
+                put("e", BsonString("e"))
+            })
+            put("key_B", BsonDocument().apply {
+                put("a", BsonString("a"))
+                put("b", BsonString("b"))
+                put("c", BsonString("c"))
+                put("d", BsonString("d"))
+                put("e", BsonString("e"))
+            })
+        }
+        val result = kBson.parse(Foo.serializer(), doc)
+        assertEquals(foo, result)
+    }
+
+    @Test
+    fun enumStringify() {
+        val model = EnumFoo(
+                sex = SEX.FEMALE,
+                sex2 = SexWithValue.TRANSGENDER
+        )
+
+        val result = kBson.stringify(EnumFoo.serializer(), model)
+
+        assertEquals(BsonDocument().apply {
+            put("sex", BsonString("FEMALE"))
+            put("sex2", BsonString("TRANSGENDER"))
+        }, result)
+    }
+
+    @Test
+    fun enumParse() {
+        val model = EnumFoo(
+                sex = SEX.FEMALE,
+                sex2 = SexWithValue.TRANSGENDER
+        )
+
+        val doc = BsonDocument().apply {
+            put("sex", BsonString("FEMALE"))
+            put("sex2", BsonString("TRANSGENDER"))
+        }
+        val result = kBson.parse(EnumFoo.serializer(), doc)
+        assertEquals(result, model)
+    }
+
+    @Test
+    fun enumParseException() {
+        val doc = BsonDocument().apply {
+            put("sex", BsonString("FEMALE"))
+            put("sex2", BsonString("AGENDER"))
+        }
+
+        try {
+            kBson.parse(EnumFoo.serializer(), doc)
+        } catch (e: SerializationException) {
+            assertEquals("Enum has unknown value AGENDER", e.message)
+        }
     }
 }

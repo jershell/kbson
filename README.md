@@ -51,10 +51,12 @@ val simple = kBson.parse(Simple.serializer(), bsonDocFromMongoJavaDriver)
 ##### Serializing from a Kotlin object to BSON
 ```kotlin
 import kotlinx.serialization.Serializable
+import com.github.jershell.kbson.Configuration
+import com.github.jershell.kbson.KBson
 
 @Serializable
 data class Simple (
-        val valueString: String,
+        val valueString: String = "default",
         val valueDouble: Double,
         val valueFloat: Float,
         val valueLong: Long,
@@ -63,8 +65,12 @@ data class Simple (
         val valueInt: Int
 )
 
+// Optional configuration
+val kBson = KBson(Configuration(encodeDefaults = false))
 val bsonDoc = kBson.stringify(Simple.serializer(), simpleModel)
 ```
+###### ps
+The default enum class supported like string. You can also override it
 
 # Contributing to kbson
 Pull requests and bug reports are always welcome!

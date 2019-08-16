@@ -3,6 +3,7 @@
  */
 package com.github.jershell.kbson
 
+import com.github.jershell.kbson.models.OptionalClass
 import com.github.jershell.kbson.models.Simple
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
@@ -16,7 +17,7 @@ import kotlin.test.assertEquals
 data class EBA(val bin: Double)
 
 @Serializable
-data class AAA (
+data class AAA(
         val mmpp: Map<EBA, Byte>
 )
 
@@ -56,6 +57,16 @@ class DependenciesTest {
                     "valueInt":42
                     }
                 """.trimIndent()))
+    }
+
+    @Test
+    fun JsonParseNullableClass() {
+        val n = OptionalClass()
+        val res = Json
+                .nonstrict
+                .parse(OptionalClass.serializer(), """{}""")
+
+        assertEquals(n.reqString, res.reqString)
     }
 
     /*   @Test

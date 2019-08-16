@@ -5,6 +5,7 @@ import kotlinx.serialization.Encoder
 import kotlinx.serialization.internal.LinkedHashMapClassDesc
 import kotlinx.serialization.internal.PrimitiveDescriptor
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.internal.EnumDescriptor
 import org.bson.BsonBinary
 import org.bson.BsonDocumentWriter
 import org.bson.types.Decimal128
@@ -12,13 +13,15 @@ import org.bson.types.ObjectId
 
 
 
-class Encoder(val writer: BsonDocumentWriter) : ElementValueEncoder(), Encoder {
+class Encoder(private val writer: BsonDocumentWriter, private val configuration: Configuration) : ElementValueEncoder(), Encoder {
 
     private var state = STATE.VALUE
     private var stateMap = StateMap()
 
+    override fun shouldEncodeElementDefault(desc: SerialDescriptor, index: Int): Boolean = configuration.encodeDefaults
+
     override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeEncoder {
-        when (desc.kind) {
+        when (desc.kind as StructureKind) {
             is StructureKind.LIST -> writer.writeStartArray()
             is StructureKind.MAP -> {
                 writer.writeStartDocument()
@@ -51,6 +54,14 @@ class Encoder(val writer: BsonDocumentWriter) : ElementValueEncoder(), Encoder {
             }
         }
         return true
+    }
+
+    override fun encodeNull() {
+        writer.writeNull()
+    }
+
+    override fun encodeEnum(enumDescription: EnumDescriptor, ordinal: Int) {
+        writer.writeString(enumDescription.getElementName(ordinal))
     }
 
     override fun encodeString(value: String) {
@@ -136,7 +147,7 @@ class Encoder(val writer: BsonDocumentWriter) : ElementValueEncoder(), Encoder {
         writer.writeBinaryData(BsonBinary(value))
     }
 
-    fun encodeStructName(value: Any) {
+    private fun encodeStructName(value: Any) {
         writer.writeName(value.toString())
         state = STATE.VALUE
     }
