@@ -17,15 +17,29 @@ BSON types supported:
 - Long
 - Decimal128
 
-## Install
-##### build.gradle 
-```gradle
 
+## Install
+
+build.gradle.kts
+```kotlin
+repositories {
+    maven { url = uri("https://dl.bintray.com/jershell/generic") }
+}
+
+dependencies {
+    implementation("com.github.jershell:kbson:0.0.1")
+}
 ```
 
-##### build.gradle.kts 
-```gradle
+build.gradle
+```groovy
+repositories {
+    maven { 'https://dl.bintray.com/jershell/generic' }
+}
 
+dependencies {
+    implementation 'com.github.jershell:kbson:0.0.1'
+}
 ```
 
 # Usage samples
