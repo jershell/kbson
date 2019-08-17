@@ -47,6 +47,7 @@ dependencies {
 
 ```kotlin
 import kotlinx.serialization.Serializable
+import com.github.jershell.kbson.ObjectIdSerializer
 
 @Serializable
 data class Simple (
@@ -56,6 +57,8 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
+        @Serializable(with = ObjectIdSerializer::class) 
+        val _id: ObjectId? = null
         val valueInt: Int
 )
 
@@ -67,6 +70,7 @@ val simple = kBson.parse(Simple.serializer(), bsonDocFromMongoJavaDriver)
 import kotlinx.serialization.Serializable
 import com.github.jershell.kbson.Configuration
 import com.github.jershell.kbson.KBson
+import com.github.jershell.kbson.ObjectIdSerializer
 
 @Serializable
 data class Simple (
@@ -76,6 +80,8 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
+        @Serializable(with = ObjectIdSerializer::class) 
+        val _id: ObjectId? = null
         val valueInt: Int
 )
 
