@@ -6,17 +6,18 @@ import kotlinx.serialization.internal.LinkedHashMapClassDesc
 import kotlinx.serialization.internal.PrimitiveDescriptor
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.internal.EnumDescriptor
+import kotlinx.serialization.internal.MissingDescriptorException
 import org.bson.BsonBinary
 import org.bson.BsonDocumentWriter
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
 
-
-class Encoder(private val writer: BsonDocumentWriter, private val configuration: Configuration) : ElementValueEncoder(), Encoder {
+class Encoder(private val writer: BsonDocumentWriter, private val configuration: Configuration) : ElementValueEncoder() {
 
     private var state = STATE.VALUE
     private var stateMap = StateMap()
+    private var deferredKeyName: String? = null
 
     override fun shouldEncodeElementDefault(desc: SerialDescriptor, index: Int): Boolean = configuration.encodeDefaults
 
@@ -39,11 +40,40 @@ class Encoder(private val writer: BsonDocumentWriter, private val configuration:
         }
     }
 
+    override fun <T : Any> encodeNullableSerializableValue(serializer: SerializationStrategy<T>, value: T?) {
+        when {
+            deferredKeyName != null && value == null -> {
+                deferredKeyName = null
+                // and nothing
+            }
+            deferredKeyName != null && value != null -> {
+                writer.writeName(deferredKeyName)
+                deferredKeyName = null
+                super.encodeNullableSerializableValue(serializer, value)
+            }
+            else -> super.encodeNullableSerializableValue(serializer, value)
+        }
+    }
+
     override fun encodeElement(desc: SerialDescriptor, index: Int): Boolean {
         when (desc.kind) {
             is StructureKind.CLASS -> {
                 val name = desc.getElementName(index)
-                writer.writeName(name)
+                try {
+                    val elemDesc = desc.getElementDescriptor(index)
+                    if (elemDesc.isNullable) {
+                        val ann = desc.getElementAnnotations(index).find { it is NonEncodeNull }
+                        if (ann != null) {
+                            deferredKeyName = name
+                        }
+                    }
+                } catch (e: MissingDescriptorException) {
+
+                }
+
+                if (deferredKeyName == null) {
+                    writer.writeName(name)
+                }
             }
             is StructureKind.MAP -> {
                 val mapDesc = desc as LinkedHashMapClassDesc

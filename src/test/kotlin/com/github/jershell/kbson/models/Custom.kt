@@ -1,9 +1,7 @@
 package com.github.jershell.kbson.models
 
-import com.github.jershell.kbson.BigDecimalSerializer
-import com.github.jershell.kbson.ObjectIdSerializer
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.github.jershell.kbson.*
+import kotlinx.serialization.*
 import org.bson.types.ObjectId
 import java.math.BigDecimal
 
@@ -11,8 +9,8 @@ import java.math.BigDecimal
 data class Custom (
         @Serializable(with = ObjectIdSerializer::class)
         @SerialName("_id")
-        val id: ObjectId,
-
-        @Serializable(with = BigDecimalSerializer::class) val dec128: BigDecimal
-
+        @NonEncodeNull
+        val id: ObjectId? = null,
+        @Serializable(with = BigDecimalSerializer::class)
+        val dec128: BigDecimal
 )

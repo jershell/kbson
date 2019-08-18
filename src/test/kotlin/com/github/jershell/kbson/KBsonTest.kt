@@ -261,6 +261,19 @@ class KBsonTest {
     }
 
     @Test
+    fun objectId() {
+        val custom = Custom(dec128 = BigDecimal("3.14"))
+        val actual = kBson.stringify(Custom.serializer(), custom)
+        val expectedCustomDoc = BsonDocument().apply {
+            put("dec128", BsonDecimal128(Decimal128(BigDecimal("3.14"))))
+        }
+        assertEquals(
+                expectedCustomDoc,
+                actual
+        )
+    }
+
+    @Test
     fun customTypesParse() {
         val expectedCustom = Custom(ObjectId("5d17ab793b4083d41f829821"), BigDecimal("3.14"))
 
