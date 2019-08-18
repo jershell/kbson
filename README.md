@@ -57,6 +57,7 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
+        @NonEncodeNull
         @Serializable(with = ObjectIdSerializer::class) 
         val _id: ObjectId? = null
         val valueInt: Int
@@ -80,6 +81,7 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
+        @NonEncodeNull
         @Serializable(with = ObjectIdSerializer::class) 
         val _id: ObjectId? = null
         val valueInt: Int
