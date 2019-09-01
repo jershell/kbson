@@ -49,6 +49,9 @@ dependencies {
 import kotlinx.serialization.Serializable
 import com.github.jershell.kbson.ObjectIdSerializer
 
+val kBson = KBson()
+
+
 @Serializable
 data class Simple (
         val valueString: String,
@@ -57,8 +60,8 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
-        @Serializable(with = ObjectIdSerializer::class) 
-        val _id: ObjectId? = null
+        @ContextualSerialization
+        val _id: ObjectId? = null,
         val valueInt: Int
 )
 
@@ -80,15 +83,28 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
-        @Serializable(with = ObjectIdSerializer::class) 
-        val _id: ObjectId? = null
+        @ContextualSerialization 
+        val _id: ObjectId? = null,
         val valueInt: Int
 )
 
 // Optional configuration
 val kBson = KBson(Configuration(encodeDefaults = false))
 val bsonDoc = kBson.stringify(Simple.serializer(), simpleModel)
+
+// You can override default serializers or add your serializer  
+val kBson = KBson(context = serializersModuleOf(mapOf(
+            ObjectId::class to ObjectIdSerializer,
+            Date::class to DateSerializer
+    )))
+
+
+
+
+
 ```
+[See the tests for more examples](https://github.com/jershell/kbson/blob/master/src/test/kotlin/com/github/jershell/kbson/KBsonTest.kt) 
+
 ###### ps
 The default enum class supported like string. You can also override it
 
