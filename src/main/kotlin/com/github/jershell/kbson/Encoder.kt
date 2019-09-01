@@ -2,18 +2,20 @@ package com.github.jershell.kbson
 
 import kotlinx.serialization.*
 import kotlinx.serialization.Encoder
-import kotlinx.serialization.internal.LinkedHashMapClassDesc
-import kotlinx.serialization.internal.PrimitiveDescriptor
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.internal.EnumDescriptor
-import kotlinx.serialization.internal.MissingDescriptorException
+import kotlinx.serialization.internal.*
+import kotlinx.serialization.modules.SerialModule
 import org.bson.BsonBinary
 import org.bson.BsonDocumentWriter
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
 
-class Encoder(private val writer: BsonDocumentWriter, private val configuration: Configuration) : ElementValueEncoder() {
+class Encoder(
+        private val writer: BsonDocumentWriter,
+        override val context: SerialModule,
+        private val configuration: Configuration
+) : ElementValueEncoder() {
 
     private var state = STATE.VALUE
     private var stateMap = StateMap()
@@ -59,7 +61,9 @@ class Encoder(private val writer: BsonDocumentWriter, private val configuration:
         when (desc.kind) {
             is StructureKind.CLASS -> {
                 val name = desc.getElementName(index)
-                try {
+
+                // Pair & Triple doesn't have a child description
+                if (desc !is PairClassDesc && desc !is TripleSerializer.TripleDesc) {
                     val elemDesc = desc.getElementDescriptor(index)
                     if (elemDesc.isNullable) {
                         val ann = desc.getElementAnnotations(index).find { it is NonEncodeNull }
@@ -67,8 +71,6 @@ class Encoder(private val writer: BsonDocumentWriter, private val configuration:
                             deferredKeyName = name
                         }
                     }
-                } catch (e: MissingDescriptorException) {
-
                 }
 
                 if (deferredKeyName == null) {

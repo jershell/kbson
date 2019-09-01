@@ -4,6 +4,7 @@ import kotlinx.serialization.*
 import com.github.jershell.kbson.Encoder as BsonEncoder
 import com.github.jershell.kbson.Decoder as BsonDecoder
 import kotlinx.serialization.internal.StringDescriptor
+import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
@@ -78,3 +79,8 @@ object ObjectIdSerializer : KSerializer<ObjectId> {
         return decoder.decodeObjectId()
     }
 }
+
+val DefaultModule = serializersModuleOf(mapOf(
+        ObjectId::class to ObjectIdSerializer,
+        Date::class to DateSerializer
+))

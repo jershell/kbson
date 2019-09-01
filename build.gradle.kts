@@ -1,6 +1,6 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.0.2"
+val LIBRARY_VERSION_NAME = "0.0.3"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
@@ -8,7 +8,7 @@ val BINTRAY_ORGINIZATION = "jershell"
 
 buildscript {
     repositories { jcenter() }
-    val kotlin_version = "1.3.41"
+    val kotlin_version = "1.3.50"
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
@@ -17,7 +17,7 @@ buildscript {
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    id("org.jetbrains.kotlin.jvm").version("1.3.41")
+    id("org.jetbrains.kotlin.jvm").version("1.3.50")
     id("maven-publish")
     id("com.jfrog.bintray") version "1.8.4"
 }
@@ -87,8 +87,8 @@ repositories {
 dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1")
-    implementation("org.mongodb:bson:3.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.12.0")
+    implementation("org.mongodb:bson:3.11.0")
 
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")

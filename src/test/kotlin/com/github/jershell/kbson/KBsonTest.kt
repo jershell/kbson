@@ -6,19 +6,22 @@ package com.github.jershell.kbson
 import com.github.jershell.kbson.models.*
 import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import java.util.Arrays
 import kotlin.math.PI
 import kotlin.test.assertTrue
 
 
 class KBsonTest {
     private val kBson = KBson()
+
     private val ts = 1562442284934L
     val img = this::class.java.getResource("/image.png").readBytes()
     val txt = this::class.java.getResource("/lorem.txt").readBytes()
@@ -269,6 +272,54 @@ class KBsonTest {
         }
         assertEquals(
                 expectedCustomDoc,
+                actual
+        )
+    }
+
+    @Test
+    fun pairStringify() {
+        val wp = WithPair(
+                Pair(null, "value"),
+                Triple(
+                        42,
+                        null,
+                        2L
+                )
+        )
+        val expected = BsonDocument().apply {
+            put("pair", BsonDocument().apply {
+                put("first", BsonNull())
+                put("second", BsonString("value"))
+
+            })
+            put("triple", BsonDocument().apply {
+                put("first", BsonInt32(42))
+                put("second", BsonNull())
+                put("third", BsonInt64(2L))
+            })
+        }
+        val actual = kBson.stringify(WithPair.serializer(), wp)
+
+        assertEquals(
+                expected,
+                actual
+        )
+    }
+
+    @Test
+    fun objectIdStringify() {
+        val childEntity = ChildEntity(userId = "5d17ab793b4083d41f829821")
+        childEntity.updatedAt = Date()
+        val actual = kBson.stringify(ChildEntity.serializer(), childEntity)
+
+        val expected = BsonDocument().apply {
+            put("userId", BsonString("5d17ab793b4083d41f829821"))
+            put("createdAt", BsonNull())
+            put("updatedAt", BsonDateTime(childEntity.updatedAt!!.time))
+        }
+
+        assertEquals(
+                expected,
                 actual
         )
     }

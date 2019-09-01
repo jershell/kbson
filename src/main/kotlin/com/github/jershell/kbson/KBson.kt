@@ -9,19 +9,18 @@ import kotlinx.serialization.modules.SerialModule
 import org.bson.*
 import org.bson.codecs.*
 
-class KBson(override val context: SerialModule = EmptyModule, private val configuration: Configuration = Configuration()) : AbstractSerialFormat(context) {
+class KBson(override val context: SerialModule = DefaultModule, private val configuration: Configuration = Configuration()) : AbstractSerialFormat(context) {
 
     fun <T> stringify(serializer: SerializationStrategy<T>, obj: T): BsonDocument {
 
         val doc = BsonDocument()
         val writer = BsonDocumentWriter(doc)
 
-        serializer.serialize(Encoder(writer, configuration), obj)
+        serializer.serialize(Encoder(writer, context, configuration), obj)
         writer.flush()
 
         return doc
     }
-
 
     fun <T> parse(deserializer: DeserializationStrategy<T>, doc: BsonDocument): T {
         return Decoder(doc, context, configuration).decode(deserializer)
