@@ -60,6 +60,7 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
+        @NonEncodeNull
         @ContextualSerialization
         val _id: ObjectId? = null,
         val valueInt: Int
@@ -83,6 +84,7 @@ data class Simple (
         val valueLong: Long,
         val valueChar: Char,
         val valueBool: Boolean,
+        @NonEncodeNull
         @ContextualSerialization 
         val _id: ObjectId? = null,
         val valueInt: Int
@@ -106,6 +108,8 @@ val kBson = KBson(context = serializersModuleOf(mapOf(
 [See the tests for more examples](https://github.com/jershell/kbson/blob/master/src/test/kotlin/com/github/jershell/kbson/KBsonTest.kt) 
 
 ###### ps
+@NonEncodeNull useful for item _id mongodb
+
 The default enum class supported like string. You can also override it
 
 # Contributing to kbson
