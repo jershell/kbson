@@ -3,6 +3,7 @@
  */
 package com.github.jershell.kbson
 
+import com.github.jershell.kbson.models.NullableDefaultClass
 import com.github.jershell.kbson.models.OptionalClass
 import com.github.jershell.kbson.models.Simple
 import kotlinx.serialization.Serializable
@@ -67,5 +68,13 @@ class DependenciesTest {
                 .parse(OptionalClass.serializer(), """{}""")
 
         assertEquals(n.reqString, res.reqString)
+    }
+
+    @Test
+    fun nonFieldParse() {
+        val doc = "{}"
+        val value = NullableDefaultClass()
+        val result = Json.parse(NullableDefaultClass.serializer(), doc)
+        assertEquals(value, result)
     }
 }

@@ -296,7 +296,7 @@ class Decoder(
             state.currentIndex++
             if (desc.isElementOptional(state.currentIndex)) {
                 val tag = desc.getTag(state.currentIndex)
-                if (!document.hasPath(tag)) {
+                if (!document.hasPath(tag) && ((state.currentIndex + 1) < state.count)) {
                     state.currentIndex++
                 }
             }

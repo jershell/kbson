@@ -423,6 +423,13 @@ class KBsonTest {
     }
 
     @Test
+    fun nonFieldParse() {
+        val doc = BsonDocument()
+        val value = NullableDefaultClass()
+        assertEquals(value,  kBson.parse(NullableDefaultClass.serializer(), doc))
+    }
+
+    @Test
     fun nullStringifyTest() {
         val docNullableField = BsonDocument().apply {
             put("str", BsonNull())
