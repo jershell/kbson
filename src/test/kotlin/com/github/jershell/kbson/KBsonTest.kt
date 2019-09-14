@@ -8,6 +8,7 @@ import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.*
+import org.bson.conversions.Bson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bson.types.Decimal128
@@ -426,7 +427,7 @@ class KBsonTest {
     fun nonFieldParse() {
         val doc = BsonDocument()
         val value = NullableDefaultClass()
-        assertEquals(value,  kBson.parse(NullableDefaultClass.serializer(), doc))
+        assertEquals(value, kBson.parse(NullableDefaultClass.serializer(), doc))
     }
 
     @Test
@@ -520,5 +521,27 @@ class KBsonTest {
         } catch (e: SerializationException) {
             assertEquals("Enum has unknown value AGENDER", e.message)
         }
+    }
+
+    @Test
+    fun mapValueParse() {
+        val a = NestedMap("AAA", mapOf(
+                "key" to Value("val1", listOf("val2", "val3"))
+        ))
+
+        val b = BsonDocument().apply {
+            append("name", BsonString("AAA"))
+            append("map", BsonDocument().apply {
+                append("key", BsonDocument().apply {
+                    append("value1", BsonString("val1"))
+                    append("value2", BsonArray().apply {
+                        add(BsonString("val2"))
+                        add(BsonString("val3"))
+                    })
+                })
+            })
+        }
+
+        assertEquals(a, kBson.parse(NestedMap.serializer(), b))
     }
 }

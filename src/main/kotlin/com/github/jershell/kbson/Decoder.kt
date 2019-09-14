@@ -40,12 +40,15 @@ class Decoder(
     private fun BsonDocument.hasPath(tag: String): Boolean {
         var container: BsonValue? = this
         var mapIndex = 0
+        println(tag)
         tag.split(".").forEachIndexed { index, descIdx ->
             val type = container?.bsonType
             val keyKind = structuresKindStack[index]
             val key = if (keyKind == StructureKind.MAP) {
+                val idx = descIdx.toInt() - 1
                 mapIndex++
-                mapStack[mapIndex - 1].names.get(descIdx.toInt())
+                // cast idx to key_name
+                mapStack[mapIndex - 1].names[idx]
             } else descIdx
 
             if (container == null) {
