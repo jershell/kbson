@@ -1,7 +1,6 @@
 package com.github.jershell.kbson
 
 import kotlinx.serialization.*
-import kotlinx.serialization.CompositeDecoder.Companion.READ_ALL
 import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
 import kotlinx.serialization.modules.SerialModule
 import kotlinx.serialization.Decoder
@@ -14,7 +13,7 @@ import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
 private data class ObjectPropertiesIndexState(
-        var currentIndex: Int = -1,
+        var currentIndex: Int = 0,
         var count: Int = 0
 )
 
@@ -40,7 +39,6 @@ class Decoder(
     private fun BsonDocument.hasPath(tag: String): Boolean {
         var container: BsonValue? = this
         var mapIndex = 0
-        println(tag)
         tag.split(".").forEachIndexed { index, descIdx ->
             val type = container?.bsonType
             val keyKind = structuresKindStack[index]
@@ -253,7 +251,7 @@ class Decoder(
 
         when (desc.kind as StructureKind) {
             is StructureKind.CLASS -> {
-                objectStateStack.add(ObjectPropertiesIndexState(-1, desc.elementsCount))
+                objectStateStack.add(ObjectPropertiesIndexState(0, desc.elementsCount))
             }
             is StructureKind.MAP -> {
                 val nextMap = document.getValueByPath(path).asDocument()
@@ -295,17 +293,23 @@ class Decoder(
 
     private fun decodeObjectElementIndex(desc: SerialDescriptor): Int {
         val state = objectStateStack.last()
-        while (state.currentIndex < state.count - 1) {
-            state.currentIndex++
-            if (desc.isElementOptional(state.currentIndex)) {
-                val tag = desc.getTag(state.currentIndex)
-                if (!document.hasPath(tag) && ((state.currentIndex + 1) < state.count)) {
+        while (true) {
+            val idx = state.currentIndex
+            if (idx == state.count) {
+                return READ_DONE
+            }
+
+            if (desc.isElementOptional(idx)) {
+                val tag = desc.getTag(idx)
+                if (!document.hasPath(tag)) {
                     state.currentIndex++
+                    continue
                 }
             }
-            return state.currentIndex
+
+            state.currentIndex = state.currentIndex + 1
+            return idx
         }
-        return READ_DONE
     }
 
     private fun decodeMapKey(tag: String): String {
