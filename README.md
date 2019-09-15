@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.jershell:kbson:0.0.1")
+    implementation("com.github.jershell:kbson:0.0.7")
 }
 ```
 
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.jershell:kbson:0.0.1'
+    implementation 'com.github.jershell:kbson:0.0.7'
 }
 ```
 
