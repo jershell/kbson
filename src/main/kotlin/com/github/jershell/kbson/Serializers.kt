@@ -40,7 +40,7 @@ object DateSerializer : KSerializer<Date> {
 @Serializer(forClass = BigDecimal::class)
 object BigDecimalSerializer : KSerializer<BigDecimal> {
     override val descriptor: SerialDescriptor =
-            StringDescriptor.withName("DateSerializer")
+            StringDescriptor.withName("BigDecimalSerializer")
 
     override fun serialize(encoder: Encoder, obj: BigDecimal) {
         encoder as BsonEncoder
@@ -64,7 +64,7 @@ object BigDecimalSerializer : KSerializer<BigDecimal> {
 @Serializer(forClass = ByteArray::class)
 object ByteArraySerializer : KSerializer<ByteArray> {
     override val descriptor: SerialDescriptor =
-            StringDescriptor.withName("DateSerializer")
+            StringDescriptor.withName("ByteArraySerializer")
 
     override fun serialize(encoder: Encoder, obj: ByteArray) {
         encoder as BsonEncoder
