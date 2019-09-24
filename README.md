@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.jershell:kbson:0.0.7")
+    implementation("com.github.jershell:kbson:0.1.0")
 }
 ```
 
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.jershell:kbson:0.0.7'
+    implementation 'com.github.jershell:kbson:0.1.0'
 }
 ```
 
@@ -99,14 +99,32 @@ val kBson = KBson(context = serializersModuleOf(mapOf(
             ObjectId::class to ObjectIdSerializer,
             Date::class to DateSerializer
     )))
-
-
-
-
+    
+// You can use load and dump with ByteArray 
+val simple = kBson.load(Simple.serializer(), bsonDoc)
+// also
+val simple2 = kBson.load(Simple.serializer(), bsonDoc.toByteArray())
+// !!!! The method load() use BsonDecoder and strict order of fields
 
 ```
 [See the tests for more examples](https://github.com/jershell/kbson/blob/master/src/test/kotlin/com/github/jershell/kbson/KBsonTest.kt) 
+## API
+```kotlin
+val kBson = KBson()
 
+kBson.parse(deserializer: DeserializationStrategy<T>, doc: BsonDocument) :T
+// !!!! The method load() use BsonDecoder and strict order of fields
+// https://docs.mongodb.com/manual/tutorial/update-documents/#field-order
+kBson.load(deserializer: DeserializationStrategy<T>, doc: ByteArray): T
+kBson.load(deserializer: DeserializationStrategy<T>, doc: BsonDocument): T
+
+kBson.stringify(): BsonDocument
+kBson.dump(serializer: SerializationStrategy<T>, obj: T): ByteArray
+
+// Extension functions 
+BsonDocument.toByteArray(): ByteArray
+BsonDocument.toDocument(): Document
+```
 ###### ps
 @NonEncodeNull useful for item _id mongodb
 

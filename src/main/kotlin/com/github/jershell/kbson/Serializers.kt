@@ -1,8 +1,7 @@
 package com.github.jershell.kbson
 
 import kotlinx.serialization.*
-import com.github.jershell.kbson.Encoder as BsonEncoder
-import com.github.jershell.kbson.Decoder as BsonDecoder
+import kotlinx.serialization.Encoder
 import kotlinx.serialization.internal.StringDescriptor
 import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.types.Decimal128
@@ -25,8 +24,15 @@ object DateSerializer : KSerializer<Date> {
     }
 
     override fun deserialize(decoder: Decoder): Date {
-        decoder as BsonDecoder
-        return Date(decoder.decodeTaggedDateTime())
+        return when(decoder) {
+            is BsonDocumentDecoder -> {
+                Date(decoder.decodeTaggedDateTime())
+            }
+            is BsonDecoder -> {
+                Date(decoder.reader.readDateTime())
+            }
+            else -> throw SerializationException("Unknown decoder type")
+        }
     }
 }
 
@@ -42,8 +48,15 @@ object BigDecimalSerializer : KSerializer<BigDecimal> {
     }
 
     override fun deserialize(decoder: Decoder): BigDecimal {
-        decoder as BsonDecoder
-        return decoder.decodeTaggedDecimal128().bigDecimalValue()
+        return when(decoder) {
+            is BsonDocumentDecoder -> {
+                decoder.decodeTaggedDecimal128().bigDecimalValue()
+            }
+            is BsonDecoder -> {
+                decoder.reader.readDecimal128().bigDecimalValue()
+            }
+            else -> throw SerializationException("Unknown decoder type")
+        }
     }
 }
 
@@ -59,8 +72,16 @@ object ByteArraySerializer : KSerializer<ByteArray> {
     }
 
     override fun deserialize(decoder: Decoder): ByteArray {
-        decoder as BsonDecoder
-        return decoder.decodeByteArray()
+        return when(decoder) {
+            is BsonDocumentDecoder -> {
+                decoder.decodeByteArray()
+            }
+            is BsonDecoder -> {
+                decoder.reader.readBinaryData().data
+            }
+            else -> throw SerializationException("Unknown decoder type")
+        }
+
     }
 }
 
@@ -75,12 +96,22 @@ object ObjectIdSerializer : KSerializer<ObjectId> {
     }
 
     override fun deserialize(decoder: Decoder): ObjectId {
-        decoder as BsonDecoder
-        return decoder.decodeObjectId()
+        return when(decoder) {
+            is BsonDocumentDecoder -> {
+                decoder.decodeObjectId()
+            }
+            is BsonDecoder -> {
+                decoder.reader.readObjectId()
+            }
+            else -> throw SerializationException("Unknown decoder type")
+        }
+
     }
 }
 
 val DefaultModule = serializersModuleOf(mapOf(
         ObjectId::class to ObjectIdSerializer,
+        BigDecimal::class to BigDecimalSerializer,
+        ByteArray::class to ByteArraySerializer,
         Date::class to DateSerializer
 ))

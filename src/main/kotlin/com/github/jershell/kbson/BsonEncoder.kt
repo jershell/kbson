@@ -7,12 +7,13 @@ import kotlinx.serialization.internal.*
 import kotlinx.serialization.modules.SerialModule
 import org.bson.BsonBinary
 import org.bson.BsonDocumentWriter
+import org.bson.BsonWriter
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
 
-class Encoder(
-        private val writer: BsonDocumentWriter,
+open class BsonEncoder(
+        private val writer: BsonWriter,
         override val context: SerialModule,
         private val configuration: Configuration
 ) : ElementValueEncoder() {

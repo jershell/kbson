@@ -1,6 +1,6 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.0.7"
+val LIBRARY_VERSION_NAME = "0.1.0"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"

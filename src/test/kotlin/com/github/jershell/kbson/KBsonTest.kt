@@ -57,6 +57,18 @@ class KBsonTest {
         put("txt", BsonBinary(txt))
     }
 
+    val strictBlobModel = Blob(
+            img = img,
+            txt = txt,
+            zipFile = file
+    )
+
+    val strictBlobDoc = BsonDocument().apply {
+        put("img", BsonBinary(img))
+        put("txt", BsonBinary(txt))
+        put("zipFile", BsonBinary(file))
+    }
+
     val complexDoc = BsonDocument().apply {
         put("createAt", BsonDateTime(ts))
         put("pair", BsonDocument().apply {
@@ -99,9 +111,24 @@ class KBsonTest {
         put("valueBool", BsonBoolean(true))
     }
 
+    val strictSimpleDoc = BsonDocument().apply {
+        put("valueString", BsonString("value_string"))
+        put("valueDouble", BsonDouble(PI))
+        put("valueFloat", BsonDouble(0.1f.toDouble()))
+        put("valueLong", BsonInt64(42L))
+        put("valueChar", BsonSymbol('€'.toString()))
+        put("valueBool", BsonBoolean(true))
+        put("valueInt", BsonInt32(42))
+    }
+
     val nestedDoc = BsonDocument().apply {
         put("m", BsonInt32(42))
         put("n", simpleDoc)
+    }
+
+    val strictNestedDoc = BsonDocument().apply {
+        put("n", strictSimpleDoc)
+        put("m", BsonInt32(42))
     }
 
 
@@ -543,5 +570,277 @@ class KBsonTest {
         }
 
         assertEquals(a, kBson.parse(NestedMap.serializer(), b))
+    }
+
+    @Test
+    fun loadSimpleDoc() {
+        val result = kBson.load(Simple.serializer(), strictSimpleDoc)
+        assertEquals(simpleModel, result)
+    }
+
+    @Test
+    fun loadNested() {
+        val res = kBson.load(Nested.serializer(), strictNestedDoc)
+        assertEquals(nestedModel, res)
+    }
+
+    @Test
+    fun loadComplex() {
+        val result = kBson.load(Complex.serializer(), complexDoc.toByteArray())
+        assertEquals(complexModel, result)
+    }
+
+    @Test
+    fun nestedComplexDumpAndLoad() {
+        val tmp = kBson.dump(NestedComplex.serializer(), nestedComplex)
+        val result: NestedComplex = kBson.load(NestedComplex.serializer(), tmp)
+        assertEquals(nestedComplex, result)
+    }
+
+    @Test
+    fun customTypesLoad() {
+        val expectedCustom = Custom(ObjectId("5d17ab793b4083d41f829821"), BigDecimal("3.14"))
+
+        val customBsonDoc = BsonDocument().apply {
+            put("_id", BsonObjectId(ObjectId("5d17ab793b4083d41f829821")))
+            put("dec128", BsonDecimal128(Decimal128(BigDecimal("3.14"))))
+        }.toByteArray()
+
+        val actualCustom = kBson.load(Custom.serializer(), customBsonDoc)
+
+        assertEquals(
+                expectedCustom,
+                actualCustom
+        )
+    }
+
+    @Test
+    fun blobLoad() {
+        val expectedResult = strictBlobModel
+        val result = kBson.load(Blob.serializer(), strictBlobDoc.toByteArray())
+        assertTrue(
+                Arrays.equals(expectedResult.img, result.img) &&
+                        Arrays.equals(expectedResult.txt, result.txt) &&
+                        Arrays.equals(expectedResult.zipFile, result.zipFile)
+        )
+    }
+
+    @Test
+    fun optionalLoad() {
+        val badDoc = BsonDocument().apply {
+            put("reqString3", BsonString("reqString3"))
+        }
+        val result = kBson.load(OptionalClass.serializer(), badDoc)
+        assertTrue(
+                (result.reqString == "default_value1") &&
+                        (result.reqString3 == "reqString3")
+        )
+    }
+
+    @Test
+    fun loadNullTest() {
+        val docNullableField = BsonDocument().apply {
+            put("str", BsonNull())
+        }
+        val docField = BsonDocument().apply {
+            put("str", BsonString("exist"))
+        }
+
+        val result1 = kBson.load(NullableClass.serializer(), docNullableField)
+        val result2 = kBson.load(NullableClass.serializer(), docField)
+        assertTrue(result1.str == null && result2.str == "exist")
+    }
+
+    @Test
+    fun loadNonField() {
+        val doc = BsonDocument()
+        val value = NullableDefaultClass()
+        assertEquals(value, kBson.load(NullableDefaultClass.serializer(), doc))
+    }
+
+    @Test
+    fun loadMaps() {
+        val foo = Foo(
+                key_A = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"),
+                key_B = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"))
+
+        val doc = BsonDocument().apply {
+            put("key_A", BsonDocument().apply {
+                put("a", BsonString("a"))
+                put("b", BsonString("b"))
+                put("c", BsonString("c"))
+                put("d", BsonString("d"))
+                put("e", BsonString("e"))
+            })
+            put("key_B", BsonDocument().apply {
+                put("a", BsonString("a"))
+                put("b", BsonString("b"))
+                put("c", BsonString("c"))
+                put("d", BsonString("d"))
+                put("e", BsonString("e"))
+            })
+        }
+        val result = kBson.load(Foo.serializer(), doc)
+        assertEquals(foo, result)
+    }
+
+    @Test
+    fun loadEnum() {
+        val model = EnumFoo(
+                sex = SEX.FEMALE,
+                sex2 = SexWithValue.TRANSGENDER
+        )
+
+        val doc = BsonDocument().apply {
+            put("sex", BsonString("FEMALE"))
+            put("sex2", BsonString("TRANSGENDER"))
+        }
+        val result = kBson.load(EnumFoo.serializer(), doc)
+        assertEquals(result, model)
+    }
+
+    @Test
+    fun loadEnumException() {
+        val doc = BsonDocument().apply {
+            put("sex", BsonString("FEMALE"))
+            put("sex2", BsonString("AGENDER"))
+        }
+
+        try {
+            kBson.load(EnumFoo.serializer(), doc.toByteArray())
+        } catch (e: SerializationException) {
+            assertEquals("Enum has unknown value AGENDER", e.message)
+        }
+    }
+
+    @Test
+    fun loadMapValue() {
+        val a = NestedMap("AAA", mapOf(
+                "key" to Value("val1", listOf("val2", "val3"))
+        ))
+
+        val b = BsonDocument().apply {
+            append("name", BsonString("AAA"))
+            append("map", BsonDocument().apply {
+                append("key", BsonDocument().apply {
+                    append("value1", BsonString("val1"))
+                    append("value2", BsonArray().apply {
+                        add(BsonString("val2"))
+                        add(BsonString("val3"))
+                    })
+                })
+            })
+        }
+
+        assertEquals(a, kBson.load(NestedMap.serializer(), b))
+    }
+
+    @Test
+    fun parseNullableCollection() {
+        val bsonDocument = BsonDocument().apply {
+            append("fieldNull", BsonNull())
+            append("list", BsonArray().apply {
+                add(BsonString("v1"))
+                add(BsonNull())
+                add(BsonNull())
+                add(BsonString("v4"))
+            })
+            append("map", BsonDocument().apply {
+                append("k1", BsonNull())
+                append("k2", BsonInt32(42))
+                append("k3", BsonInt32(44))
+            })
+        }
+
+        val collection = NullableCollection(
+                null,
+                listOf("v1", null, null, "v4"),
+                mapOf(
+                        "k1" to null,
+                        "k2" to 42,
+                        "k3" to 44
+                )
+        )
+
+        assertEquals(collection, kBson.parse(NullableCollection.serializer(), bsonDocument))
+    }
+    @Test
+    fun loadNullableCollection() {
+        val expected = BsonDocument().apply {
+            append("fieldNull", BsonNull())
+            append("list", BsonArray().apply {
+                add(BsonString("v1"))
+                add(BsonNull())
+                add(BsonNull())
+                add(BsonString("v4"))
+            })
+            append("map", BsonDocument().apply {
+                append("k1", BsonNull())
+                append("k2", BsonInt32(42))
+                append("k3", BsonInt32(44))
+            })
+        }
+
+        val collection = NullableCollection(
+                null,
+                listOf("v1", null, null, "v4"),
+                mapOf("k1" to null, "k2" to 42, "k3" to 44)
+        )
+
+        assertEquals(collection, kBson.load(NullableCollection.serializer(), expected))
+    }
+
+    @Test
+    fun loadBinNullableCollection() {
+        val expected = BsonDocument().apply {
+            append("fieldNull", BsonNull())
+            append("list", BsonArray().apply {
+                add(BsonString("v1"))
+                add(BsonNull())
+                add(BsonNull())
+                add(BsonString("v4"))
+            })
+            append("map", BsonDocument().apply {
+                append("k1", BsonNull())
+                append("k2", BsonInt32(42))
+                append("k3", BsonInt32(44))
+            })
+        }.toByteArray()
+
+        val collection = NullableCollection(
+                null,
+                listOf("v1", null, null, "v4"),
+                mapOf("k1" to null, "k2" to 42, "k3" to 44)
+        )
+
+        assertEquals(collection, kBson.load(NullableCollection.serializer(), expected))
+    }
+
+    @Test
+    fun loadExceptionsMissingValue() {
+        val docBadType = BsonDocument().apply {
+            append("f1", BsonInt32(1))
+            append("f2", BsonInt32(2))
+            append("f3", BsonInt32(3))
+        }
+
+        try {
+            kBson.load(SimpleNG.serializer(), docBadType)
+        } catch (e: MissingFieldException) {
+            assertTrue(e.message == "Field 'short' is required, but it was missing")
+        }
+    }
+
+    @Test
+    fun loadExceptionsBadType() {
+        val docBadType = BsonDocument().apply {
+            put("short", BsonString("127"))
+        }
+
+        try {
+            kBson.load(SimpleNG.serializer(), docBadType)
+        } catch (e: BsonInvalidOperationException) {
+            assertTrue(e.message == "readInt32 can only be called when CurrentBSONType is INT32, not when CurrentBSONType is STRING.")
+        }
     }
 }

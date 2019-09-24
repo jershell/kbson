@@ -6,7 +6,8 @@ import java.util.Date
 
 @Serializable
 data class Complex(
-        @Serializable(with = DateSerializer::class) val createAt: Date,
+        @Serializable(with = DateSerializer::class)
+        val createAt: Date,
         val pair: Pair<String, String>,
         val list: List<String>,
         val triple: Triple<String, String, String>,

@@ -24,7 +24,7 @@ private data class MapElement(
     var state: STATE = STATE.NAME
 }
 
-class Decoder(
+class BsonDocumentDecoder(
         private val document: BsonDocument,
         override val context: SerialModule,
         private val configuration: Configuration
@@ -89,9 +89,23 @@ class Decoder(
     }
 
     override fun decodeTaggedNotNullMark(tag: String): Boolean {
-        val hasValue = document.hasPath(tag)
+        val hasValueByPath = document.hasPath(tag)
+
         return when {
-            hasValue -> !document.getValueByPath(tag).isNull
+            hasValueByPath -> {
+                val isNull = document.getValueByPath(tag).bsonType == BsonType.NULL
+                if (isNull && structuresKindStack.lastOrNull() == StructureKind.MAP) {
+                    when (mapStack.last().state) {
+                        STATE.NAME -> {
+                            mapStack.last().state = STATE.VALUE
+                        }
+                        STATE.VALUE -> {
+                            mapStack.last().state = STATE.NAME
+                        }
+                    }
+                }
+                !isNull
+            }
             else -> false
         }
     }
