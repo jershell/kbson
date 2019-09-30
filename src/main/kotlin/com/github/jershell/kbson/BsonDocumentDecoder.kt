@@ -9,6 +9,9 @@ import kotlinx.serialization.internal.ArrayListClassDesc
 import kotlinx.serialization.internal.EnumDescriptor
 import kotlinx.serialization.internal.LinkedHashMapClassDesc
 import org.bson.*
+import org.bson.codecs.BsonDocumentCodec
+import org.bson.codecs.DecoderContext
+import org.bson.codecs.DocumentCodec
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
@@ -25,13 +28,15 @@ private data class MapElement(
 }
 
 class BsonDocumentDecoder(
-        private val document: BsonDocument,
+        reader: BsonReader,
         override val context: SerialModule,
         private val configuration: Configuration
 ) : NamedValueDecoder(), Decoder {
     private val mapStack = mutableListOf<MapElement>()
     private val listStack = mutableListOf<BsonArray>()
     private val objectStateStack = mutableListOf<ObjectPropertiesIndexState>()
+    private val document: BsonDocument = BsonDocumentCodec().decode(reader, DecoderContext.builder().build())
+
     var structuresKindStack = mutableListOf<StructureKind>()
 
     private fun extractField(tag: String) = tag.split(".").last()
