@@ -6,9 +6,18 @@ package com.github.jershell.kbson
 import com.github.jershell.kbson.models.NullableDefaultClass
 import com.github.jershell.kbson.models.OptionalClass
 import com.github.jershell.kbson.models.Simple
+import com.github.jershell.kbson.models.polymorph.IntMessage
+import com.github.jershell.kbson.models.polymorph.Message
+import com.github.jershell.kbson.models.polymorph.MessageWrapper
+import com.github.jershell.kbson.models.polymorph.StringMessage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.plus
+import org.bson.BsonDocument
+import org.bson.BsonInt32
+import org.bson.BsonString
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -76,5 +85,45 @@ class DependenciesTest {
         val value = NullableDefaultClass()
         val result = Json.parse(NullableDefaultClass.serializer(), doc)
         assertEquals(value, result)
+    }
+
+    @Test
+    fun stringifyPolymorphism() {
+        val pModule = SerializersModule {
+            polymorphic(Message::class) {
+                StringMessage::class with StringMessage.serializer()
+                IntMessage::class with IntMessage.serializer()
+            }
+        }
+
+        val mDoc = """{"m":{"type":"com.github.jershell.kbson.models.polymorph.StringMessage","msg":"FortyTwo"}}"""
+        val nDoc = """{"m":{"type":"com.github.jershell.kbson.models.polymorph.IntMessage","number":42}}"""
+
+        val polyJson = Json(context = DefaultModule + pModule)
+        val res1 = polyJson.stringify(MessageWrapper.serializer(), MessageWrapper(m = StringMessage("FortyTwo")))
+        val res2 = polyJson.stringify(MessageWrapper.serializer(), MessageWrapper(m = IntMessage(42)))
+
+        assertEquals(res1, mDoc)
+        assertEquals(res2, nDoc)
+    }
+
+    @Test
+    fun parsePolymorphism() {
+        val pModule = SerializersModule {
+            polymorphic(Message::class) {
+                StringMessage::class with StringMessage.serializer()
+                IntMessage::class with IntMessage.serializer()
+            }
+        }
+
+        val mDoc = MessageWrapper(m = StringMessage("FortyTwo"))
+        val nDoc = MessageWrapper(m = IntMessage(42))
+
+        val polyJson = Json(context = DefaultModule + pModule)
+        val res1 = polyJson.parse(MessageWrapper.serializer(), """{"m":{"type":"com.github.jershell.kbson.models.polymorph.StringMessage","msg":"FortyTwo"}}""")
+        val res2 = polyJson.parse(MessageWrapper.serializer(), """{"m":{"type":"com.github.jershell.kbson.models.polymorph.IntMessage","number":42}}""")
+
+        assertEquals(res1, mDoc)
+        assertEquals(res2, nDoc)
     }
 }

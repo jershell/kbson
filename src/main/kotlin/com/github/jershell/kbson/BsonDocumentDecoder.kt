@@ -1,6 +1,7 @@
 package com.github.jershell.kbson
 
 import kotlinx.serialization.*
+import kotlinx.serialization.CompositeDecoder.Companion.READ_ALL
 import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
 import kotlinx.serialization.modules.SerialModule
 import kotlinx.serialization.Decoder
@@ -36,8 +37,24 @@ class BsonDocumentDecoder(
     private val listStack = mutableListOf<BsonArray>()
     private val objectStateStack = mutableListOf<ObjectPropertiesIndexState>()
     private val document: BsonDocument = BsonDocumentCodec().decode(reader, DecoderContext.builder().build())
+    private var hasClass = false
+    var structuresKindStack = mutableListOf<SerialKind>()
 
-    var structuresKindStack = mutableListOf<StructureKind>()
+    @Suppress("UNCHECKED_CAST")
+    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        if (deserializer !is PolymorphicSerializer<*>) {
+            return deserializer.deserialize(this)
+        }
+        val cTag = currentTagOrNull
+        val path = if (cTag != null) currentTag + "." + configuration.classDiscriminator else configuration.classDiscriminator
+        structuresKindStack.add(deserializer.descriptor.kind)
+        val type = document.getValueByPath(path).asString().value
+        val actualSerializer = deserializer.findPolymorphicSerializer(this, type) as KSerializer<T>
+        if (cTag != null && document.hasPath(cTag)) {
+            return BsonDocumentDecoder(document.get(cTag)!!.asDocument().asBsonReader(), context, configuration).decode(actualSerializer)
+        }
+        return BsonDocumentDecoder(document.asBsonReader(), context, configuration).decode(actualSerializer)
+    }
 
     private fun extractField(tag: String) = tag.split(".").last()
 
@@ -70,6 +87,7 @@ class BsonDocumentDecoder(
     private fun BsonDocument.getValueByPath(tag: String): BsonValue {
         var container: BsonValue = this
         var mapIndex = 0
+
         tag.split(".").forEachIndexed { index, descIdx ->
             val type = container.bsonType
             val keyKind = structuresKindStack[index]
@@ -263,27 +281,29 @@ class BsonDocumentDecoder(
         }
     }
 
+
     override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeDecoder {
-        structuresKindStack.add(desc.kind as StructureKind)
+        if (desc.kind !is UnionKind) {
+            structuresKindStack.add(desc.kind as StructureKind)
 
-        val path = currentTagOrNull ?: ""
+            val path = currentTagOrNull ?: ""
 
-        when (desc.kind as StructureKind) {
-            is StructureKind.CLASS -> {
-                objectStateStack.add(ObjectPropertiesIndexState(0, desc.elementsCount))
-            }
-            is StructureKind.MAP -> {
-                val nextMap = document.getValueByPath(path).asDocument()
-                mapStack.add(MapElement(
-                        names = nextMap.keys.toList(),
-                        values = listOf<BsonValue>(BsonInt32(-1)) + nextMap.values.toList()
-                ))
-            }
-            is StructureKind.LIST -> {
-                listStack.add(document.getValueByPath(path).asArray())
+            when (desc.kind as StructureKind) {
+                is StructureKind.CLASS -> {
+                    objectStateStack.add(ObjectPropertiesIndexState(0, desc.elementsCount))
+                }
+                is StructureKind.MAP -> {
+                    val nextMap = document.getValueByPath(path).asDocument()
+                    mapStack.add(MapElement(
+                            names = nextMap.keys.toList(),
+                            values = listOf<BsonValue>(BsonInt32(-1)) + nextMap.values.toList()
+                    ))
+                }
+                is StructureKind.LIST -> {
+                    listStack.add(document.getValueByPath(path).asArray())
+                }
             }
         }
-
         return super.beginStructure(desc, *typeParams)
     }
 
@@ -304,6 +324,7 @@ class BsonDocumentDecoder(
 
     override fun decodeElementIndex(desc: SerialDescriptor): Int {
         return when (desc.kind) {
+            is UnionKind -> READ_ALL
             StructureKind.CLASS -> decodeObjectElementIndex(desc)
             StructureKind.MAP, StructureKind.LIST -> super.decodeElementIndex(desc)
             else -> throw SerializationException("${desc.kind} unsupported")

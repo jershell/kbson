@@ -4,8 +4,11 @@
 package com.github.jershell.kbson
 
 import com.github.jershell.kbson.models.*
+import com.github.jershell.kbson.models.polymorph.*
 import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.plus
 import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.*
 import org.bson.conversions.Bson
@@ -13,6 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
+import java.lang.Error
 import java.math.BigDecimal
 import java.util.Date
 import java.util.Arrays
@@ -224,9 +228,7 @@ class KBsonTest {
 
     @Test
     fun simpleDocParseTest() {
-        val res = kBson.parse(Simple.serializer(), simpleDoc)
-        print("simpleModel $res")
-        assertEquals(simpleModel, res)
+        assertEquals(simpleModel, kBson.parse(Simple.serializer(), simpleDoc))
     }
 
     @Test
@@ -764,6 +766,7 @@ class KBsonTest {
 
         assertEquals(collection, kBson.parse(NullableCollection.serializer(), bsonDocument))
     }
+
     @Test
     fun loadNullableCollection() {
         val expected = BsonDocument().apply {
@@ -842,5 +845,254 @@ class KBsonTest {
         } catch (e: BsonInvalidOperationException) {
             assertTrue(e.message == "readInt32 can only be called when CurrentBSONType is INT32, not when CurrentBSONType is STRING.")
         }
+    }
+
+    @Test
+    fun stringifyPolymorphism() {
+        val pModule = SerializersModule {
+            polymorphic(Message::class) {
+                StringMessage::class with StringMessage.serializer()
+                IntMessage::class with IntMessage.serializer()
+            }
+        }
+        val conf = Configuration()
+        val mDoc = BsonDocument().apply {
+            append("m", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.StringMessage"))
+                append("msg", BsonString("FortyTwo"))
+            })
+        }
+
+        val nDoc = BsonDocument().apply {
+            append("m", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.IntMessage"))
+                append("number", BsonInt32(42))
+            })
+        }
+
+        val polyBson = KBson(context = DefaultModule + pModule)
+        val res1 = polyBson.stringify(MessageWrapper.serializer(), MessageWrapper(m = StringMessage("FortyTwo")))
+        val res2 = polyBson.stringify(MessageWrapper.serializer(), MessageWrapper(m = IntMessage(42)))
+
+        assertEquals(res1, mDoc)
+        assertEquals(res2, nDoc)
+    }
+
+    @Test
+    fun parsePolymorphism() {
+        val pModule = SerializersModule {
+            polymorphic(Message::class) {
+                StringMessage::class with StringMessage.serializer()
+                IntMessage::class with IntMessage.serializer()
+            }
+        }
+
+        val sDoc = BsonDocument().apply {
+            append("m", BsonDocument().apply {
+                append(Configuration().classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.StringMessage"))
+                append("msg", BsonString("FortyTwo"))
+            })
+        }
+
+        val nDoc = BsonDocument().apply {
+            append("m", BsonDocument().apply {
+                append(Configuration().classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.IntMessage"))
+                append("number", BsonInt32(42))
+            })
+        }
+
+        val polyBson = KBson(context = DefaultModule + pModule)
+        val res1 = polyBson.parse(MessageWrapper.serializer(), sDoc)
+        val res2 = polyBson.parse(MessageWrapper.serializer(), nDoc)
+
+        assertEquals(MessageWrapper(m = StringMessage("FortyTwo")), res1)
+        assertEquals(MessageWrapper(m = IntMessage(42)), res2)
+    }
+
+    @Test
+    fun stringifyPolymorphismComplexHierarchies() {
+        val pModule = SerializersModule {
+            polymorphic(Message::class, TimestampedMessage::class) {
+                FooTimestampedMessage::class with FooTimestampedMessage.serializer()
+                StringMessage::class with StringMessage.serializer()
+                IntMessage::class with IntMessage.serializer()
+            }
+        }
+        val conf = Configuration()
+        val mDoc = BsonDocument().apply {
+            append("request", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.StringMessage"))
+                append("msg", BsonString("FortyTwo"))
+            })
+            append("response", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage"))
+                append("timestamp", BsonInt32(1570459730))
+            })
+        }
+
+        val nDoc = BsonDocument().apply {
+            append("request", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.IntMessage"))
+                append("number", BsonInt32(42))
+            })
+            append("response", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage"))
+                append("timestamp", BsonInt32(1570459730))
+            })
+        }
+
+        val polyBson = KBson(context = DefaultModule + pModule)
+        val res1 = polyBson.stringify(Wrapper.serializer(), Wrapper(
+                request = StringMessage("FortyTwo"),
+                response = FooTimestampedMessage(1570459730)
+        ))
+        val res2 = polyBson.stringify(Wrapper.serializer(), Wrapper(
+                request = IntMessage(42),
+                response = FooTimestampedMessage(1570459730)
+        ))
+
+        assertEquals(res1, mDoc)
+        assertEquals(res2, nDoc)
+    }
+
+    @Test
+    fun parsePolymorphismComplexHierarchies() {
+        val pModule = SerializersModule {
+            polymorphic(Message::class, TimestampedMessage::class) {
+                FooTimestampedMessage::class with FooTimestampedMessage.serializer()
+                StringMessage::class with StringMessage.serializer()
+                IntMessage::class with IntMessage.serializer()
+            }
+        }
+        val conf = Configuration()
+        val mDoc = BsonDocument().apply {
+            append("request", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.StringMessage"))
+                append("msg", BsonString("FortyTwo"))
+            })
+            append("response", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage"))
+                append("timestamp", BsonInt32(1570459730))
+            })
+        }
+
+        val nDoc = BsonDocument().apply {
+            append("request", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.IntMessage"))
+                append("number", BsonInt32(42))
+            })
+            append("response", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage"))
+                append("timestamp", BsonInt32(1570459730))
+            })
+        }
+
+        val polyBson = KBson(context = DefaultModule + pModule)
+
+        val res1 = polyBson.parse(Wrapper.serializer(), mDoc)
+        val res2 = polyBson.parse(Wrapper.serializer(), nDoc)
+
+        assertEquals(Wrapper(
+                request = StringMessage("FortyTwo"),
+                response = FooTimestampedMessage(1570459730)
+        ), res1)
+
+        assertEquals(Wrapper(
+                request = IntMessage(42),
+                response = FooTimestampedMessage(1570459730)
+        ), res2)
+    }
+
+    @Test
+    fun stringifyPolymorphismSealed() {
+        val pModule = SerializersModule {
+            polymorphic<SMessage> {
+                SMessage.Error::class with SMessage.Error.serializer()
+                SMessage.Loading::class with SMessage.Loading.serializer()
+                SMessage.Data::class with SMessage.Data.serializer()
+            }
+        }
+        val conf = Configuration()
+
+        val doc1 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Error"))
+            })
+        }
+
+        val doc2 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading"))
+            })
+        }
+
+        val doc3 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Data"))
+                append("someData", BsonString("something"))
+            })
+        }
+
+        val polyBson = KBson(context = DefaultModule + pModule)
+
+        val res1 = polyBson.stringify(SealedWrapper.serializer(), SealedWrapper(
+                payload = SMessage.Error()
+        ))
+
+        val res2 = polyBson.stringify(SealedWrapper.serializer(), SealedWrapper(
+                payload = SMessage.Loading()
+        ))
+
+        val res3 = polyBson.stringify(SealedWrapper.serializer(), SealedWrapper(
+                payload = SMessage.Data(someData = "something")
+        ))
+
+        assertEquals(res1, doc1)
+        assertEquals(res2, doc2)
+        assertEquals(res3, doc3)
+    }
+
+    @Test
+    fun parsePolymorphismSealed() {
+        val pModule = SerializersModule {
+            polymorphic<SMessage> {
+                SMessage.Error::class with SMessage.Error.serializer()
+                SMessage.Loading::class with SMessage.Loading.serializer()
+                SMessage.Data::class with SMessage.Data.serializer()
+            }
+        }
+        val conf = Configuration()
+
+
+        val doc1 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Error"))
+            })
+        }
+
+        val doc2 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading"))
+            })
+        }
+
+        val doc3 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Data"))
+                append("someData", BsonString("something"))
+            })
+        }
+
+        val polyBson = KBson(context = DefaultModule + pModule)
+
+        val res1 = polyBson.parse(SealedWrapper.serializer(), doc1)
+
+        val res2 = polyBson.parse(SealedWrapper.serializer(), doc2)
+
+        val res3 = polyBson.parse(SealedWrapper.serializer(), doc3)
+
+        assertTrue(res1.payload is SMessage.Error)
+        assertTrue(res2.payload is SMessage.Loading)
+        assertTrue(res3.payload is SMessage.Data && res3.payload.someData == "something")
     }
 }

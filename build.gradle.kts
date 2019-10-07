@@ -1,10 +1,11 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.1.1"
+val LIBRARY_VERSION_NAME = "0.1.12"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
+val KOTLINX_SERIALIZATION_RUNTIME = "0.11.1"
 
 buildscript {
     repositories { jcenter() }
@@ -87,7 +88,7 @@ repositories {
 dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.11.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:$KOTLINX_SERIALIZATION_RUNTIME")
     implementation("org.mongodb:bson:3.11.0")
 
     // Use the Kotlin test library.

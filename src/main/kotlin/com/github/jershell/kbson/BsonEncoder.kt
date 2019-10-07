@@ -19,19 +19,32 @@ open class BsonEncoder(
 ) : ElementValueEncoder() {
 
     private var state = STATE.VALUE
+    private var hasBegin = false
     private var stateMap = StateMap()
     private var deferredKeyName: String? = null
 
     override fun shouldEncodeElementDefault(desc: SerialDescriptor, index: Int): Boolean = configuration.encodeDefaults
 
     override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeEncoder {
-        when (desc.kind as StructureKind) {
-            is StructureKind.LIST -> writer.writeStartArray()
-            is StructureKind.MAP -> {
+        when (desc.kind) {
+            StructureKind.LIST -> writer.writeStartArray()
+            StructureKind.CLASS -> {
+                if(hasBegin) {
+                    hasBegin = false
+                } else {
+                    writer.writeStartDocument()
+                }
+            }
+            UnionKind.OBJECT, UnionKind.SEALED, UnionKind.POLYMORPHIC -> {
+                writer.writeStartDocument()
+                writer.writeName(configuration.classDiscriminator)
+                hasBegin = true
+            }
+            StructureKind.MAP -> {
                 writer.writeStartDocument()
                 stateMap = StateMap()
             }
-            is StructureKind.CLASS -> writer.writeStartDocument()
+            else -> throw SerializationException("Primitives are not supported at top-level")
         }
         return super.beginStructure(desc, *typeParams)
     }

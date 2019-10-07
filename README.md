@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.jershell:kbson:0.1.1")
+    implementation("com.github.jershell:kbson:0.1.2")
 }
 ```
 
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.jershell:kbson:0.1.1'
+    implementation 'com.github.jershell:kbson:0.1.2'
 }
 ```
 
@@ -125,6 +125,12 @@ kBson.dump(serializer: SerializationStrategy<T>, obj: T): ByteArray
 BsonDocument.toByteArray(): ByteArray
 BsonDocument.toDocument(): Document
 ```
+
+### Configuration
+```
+classDiscriminator = "___type" // name of the class descriptor property in polymorphic serialization.
+encodeDefaults = "true" // specifies whether default values are encoded.
+```
 ###### ps
 @NonEncodeNull useful for item _id mongodb
 
@@ -138,5 +144,6 @@ To run the tests: ./gradlew check
 # Reference links
 - http://litote.org/kmongo/ | https://github.com/Litote/kmongo
 - https://github.com/Kotlin/kotlinx.serialization
+- https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/polymorphism.md
 - https://mongodb.github.io/mongo-java-driver/
 - Special thanks to: https://github.com/charleskorn/kaml
