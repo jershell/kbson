@@ -1,3 +1,5 @@
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.jershell/kbson/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.jershell/kbson)
+[ ![JCenter](https://api.bintray.com/packages/jershell/generic/kbson/images/download.svg?version=latest) ](https://bintray.com/jershell/generic/kbson)
 # kbson
 
 # What is this?
@@ -22,10 +24,6 @@ BSON types supported:
 
 build.gradle.kts
 ```kotlin
-repositories {
-    maven { url = uri("https://dl.bintray.com/jershell/generic") }
-}
-
 dependencies {
     implementation("com.github.jershell:kbson:0.1.2")
 }
@@ -33,10 +31,6 @@ dependencies {
 
 build.gradle
 ```groovy
-repositories {
-    maven { 'https://dl.bintray.com/jershell/generic' }
-}
-
 dependencies {
     implementation 'com.github.jershell:kbson:0.1.2'
 }
