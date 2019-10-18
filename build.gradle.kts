@@ -30,7 +30,7 @@ plugins {
     id("com.jfrog.bintray") version "1.8.4"
 }
 
-apply(plugin="kotlinx-serialization")
+apply(plugin = "kotlinx-serialization")
 
 group = GROUP_ID
 version = LIBRARY_VERSION_NAME
@@ -50,14 +50,20 @@ tasks.withType<GenerateMavenPom>().configureEach {
     destination = file("$buildDir/poms/$publicationName-pom.xml")
 }
 
+tasks.register<Jar>("javadocJar") {
+    archiveClassifier.set("javadoc")
+    from("$rootDir/README.md")
+}
+
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             artifact(tasks["sourcesAll"])
+            artifact(tasks["javadocJar"])
             pom {
                 name.set(provider { "$GROUP_ID:$ARTIFACT_ID" })
-                description.set(provider { project.description ?: SHORT_DESC  })
+                description.set(provider { project.description ?: SHORT_DESC })
                 url.set(VCS_URL)
                 developers {
                     developer {
