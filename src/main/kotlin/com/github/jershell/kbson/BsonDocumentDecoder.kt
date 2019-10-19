@@ -9,6 +9,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.internal.ArrayListClassDesc
 import kotlinx.serialization.internal.EnumDescriptor
 import kotlinx.serialization.internal.LinkedHashMapClassDesc
+import kotlinx.serialization.internal.ListLikeDescriptor
 import org.bson.*
 import org.bson.codecs.BsonDocumentCodec
 import org.bson.codecs.DecoderContext
@@ -37,7 +38,6 @@ class BsonDocumentDecoder(
     private val listStack = mutableListOf<BsonArray>()
     private val objectStateStack = mutableListOf<ObjectPropertiesIndexState>()
     private val document: BsonDocument = BsonDocumentCodec().decode(reader, DecoderContext.builder().build())
-    private var hasClass = false
     var structuresKindStack = mutableListOf<SerialKind>()
 
     @Suppress("UNCHECKED_CAST")
@@ -276,7 +276,7 @@ class BsonDocumentDecoder(
     override fun decodeCollectionSize(desc: SerialDescriptor): Int {
         return when (desc) {
             is LinkedHashMapClassDesc -> mapStack.last().names.size
-            is ArrayListClassDesc -> listStack.last().size
+            is ListLikeDescriptor -> listStack.last().size
             else -> super.decodeCollectionSize(desc)
         }
     }

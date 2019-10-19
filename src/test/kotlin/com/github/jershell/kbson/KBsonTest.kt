@@ -1095,4 +1095,37 @@ class KBsonTest {
         assertTrue(res2.payload is SMessage.Loading)
         assertTrue(res3.payload is SMessage.Data && res3.payload.someData == "something")
     }
+
+    @Test
+    fun parseSimpleSetOfStrings() {
+        val doc = BsonDocument().apply {
+            put("littleSet", BsonArray().apply {
+                add(BsonString("one"))
+                add(BsonString("two"))
+                add(BsonString("three"))
+            })
+        }
+
+        val result = kBson.parse(WrapperSet.serializer(), doc)
+
+        assertEquals(WrapperSet(setOf("one", "two", "three")), result)
+    }
+
+    @Test
+    fun stringifySimpleSetOfStrings() {
+        val doc = BsonDocument().apply {
+            put("littleSet", BsonArray().apply {
+                add(BsonString("one"))
+                add(BsonString("two"))
+                add(BsonString("three"))
+            })
+        }
+
+        val result = kBson.stringify(
+                WrapperSet.serializer(),
+                WrapperSet(setOf("one", "two", "three"))
+        )
+
+        assertEquals(result, doc)
+    }
 }

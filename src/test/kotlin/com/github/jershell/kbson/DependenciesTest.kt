@@ -6,6 +6,7 @@ package com.github.jershell.kbson
 import com.github.jershell.kbson.models.NullableDefaultClass
 import com.github.jershell.kbson.models.OptionalClass
 import com.github.jershell.kbson.models.Simple
+import com.github.jershell.kbson.models.WrapperSet
 import com.github.jershell.kbson.models.polymorph.IntMessage
 import com.github.jershell.kbson.models.polymorph.Message
 import com.github.jershell.kbson.models.polymorph.MessageWrapper
@@ -125,5 +126,12 @@ class DependenciesTest {
 
         assertEquals(res1, mDoc)
         assertEquals(res2, nDoc)
+    }
+
+    @Test
+    fun parseArrayLikeSet() {
+        val source = """{"littleSet": ["one", "two", "three"]}"""
+        val result = Json.parse(WrapperSet.serializer(), source)
+        assertEquals(WrapperSet(setOf("one", "two", "three")), result)
     }
 }
