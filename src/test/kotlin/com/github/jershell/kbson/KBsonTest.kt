@@ -9,14 +9,11 @@ import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
-import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.*
-import org.bson.conversions.Bson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
-import java.lang.Error
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.Date
