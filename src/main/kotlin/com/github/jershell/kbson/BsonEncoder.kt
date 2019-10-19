@@ -19,7 +19,7 @@ open class BsonEncoder(
 ) : ElementValueEncoder() {
 
     private var state = STATE.VALUE
-    private var hasBegin = false
+    private var hasBegin = false // for UnionKind
     private var stateMap = StateMap()
     private var deferredKeyName: String? = null
 
@@ -92,10 +92,10 @@ open class BsonEncoder(
                 }
             }
             is StructureKind.MAP -> {
-                val mapDesc = desc as LinkedHashMapClassDesc
-                if (mapDesc.keyDescriptor !is PrimitiveDescriptor) {
-                    throw SerializationException("map key name is not primitive")
-                }
+//                val mapDesc = desc as LinkedHashMapClassDesc
+//                if (mapDesc.keyDescriptor !is PrimitiveDescriptor) {
+//                    throw SerializationException("map key name is not primitive")
+//                }
                 state = stateMap.next()
             }
         }
@@ -178,19 +178,32 @@ open class BsonEncoder(
     }
 
     fun encodeDateTime(value: Long) {
-        writer.writeDateTime(value)
+        when (state) {
+            STATE.VALUE -> writer.writeDateTime(value)
+            STATE.NAME -> encodeStructName(value.toString())
+        }
     }
 
     fun encodeObjectId(value: ObjectId) {
-        writer.writeObjectId(value)
+        when (state) {
+            STATE.VALUE -> writer.writeObjectId(value)
+            STATE.NAME -> encodeStructName(value.toString())
+        }
     }
 
     fun encodeDecimal128(value: Decimal128) {
-        writer.writeDecimal128(value)
+        when (state) {
+            STATE.VALUE -> writer.writeDecimal128(value)
+            STATE.NAME -> encodeStructName(value.toString())
+        }
     }
 
     fun encodeByteArray(value: ByteArray) {
-        writer.writeBinaryData(BsonBinary(value))
+        when (state) {
+            STATE.VALUE -> writer.writeBinaryData(BsonBinary(value))
+            // I think we can use base64, but files can be big
+            STATE.NAME -> throw SerializationException("ByteArray is not supported as a key of map")
+        }
     }
 
     private fun encodeStructName(value: Any) {

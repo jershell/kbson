@@ -18,6 +18,7 @@ import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.lang.Error
 import java.math.BigDecimal
+import java.time.Instant
 import java.util.Date
 import java.util.Arrays
 import kotlin.math.PI
@@ -1126,6 +1127,90 @@ class KBsonTest {
                 WrapperSet(setOf("one", "two", "three"))
         )
 
-        assertEquals(result, doc)
+        assertEquals(doc, result)
+    }
+
+    @Test
+    fun stringifyMapWithObjectIdKeys() {
+        val doc = BsonDocument().apply {
+            put("elements", BsonDocument().apply {
+                put("5d1777814e8c7b408a6ada73", BsonString("one"))
+                put("5d1777d04e8c7b408a6ada8a", BsonString("two"))
+                put("5d17ab793b4083d41f829821", BsonString("three"))
+            })
+        }
+
+        val result = kBson.stringify(WrapperMapWithObjectId.serializer(), WrapperMapWithObjectId(mapOf(
+                ObjectId("5d1777814e8c7b408a6ada73") to "one",
+                ObjectId("5d1777d04e8c7b408a6ada8a") to "two",
+                ObjectId("5d17ab793b4083d41f829821") to "three"
+        )))
+
+        assertEquals(doc, result)
+    }
+
+    @Test
+    fun parseMapWithObjectIdKeys() {
+        val doc = BsonDocument().apply {
+            put("elements", BsonDocument().apply {
+                put("5d1777814e8c7b408a6ada73", BsonString("one"))
+                put("5d1777d04e8c7b408a6ada8a", BsonString("two"))
+                put("5d17ab793b4083d41f829821", BsonString("three"))
+            })
+        }
+
+        val result = kBson.parse(WrapperMapWithObjectId.serializer(), doc)
+
+        assertEquals(result, WrapperMapWithObjectId(mapOf(
+                ObjectId("5d1777814e8c7b408a6ada73") to "one",
+                ObjectId("5d1777d04e8c7b408a6ada8a") to "two",
+                ObjectId("5d17ab793b4083d41f829821") to "three"
+        )))
+    }
+
+    @Test
+    fun stringifyMapWithAdvancedKeys() {
+
+        val datePoint = Date.from(Instant.parse("2040-12-12T10:21:12Z"))
+
+        val result = kBson.stringify(
+                WrapperMapWithAdvancedKey.serializer(),
+                WrapperMapWithAdvancedKey(
+                        mapOf(datePoint to "point"),
+                        mapOf(BigDecimal("3.14159265") to "PI")
+                ))
+
+        val doc = BsonDocument().apply {
+            put("itemsDate", BsonDocument().apply {
+                put(datePoint.time.toString(), BsonString("point"))
+            })
+            put("itemsBigDecimal", BsonDocument().apply {
+                put("3.14159265", BsonString("PI"))
+            })
+        }
+
+        assertEquals(doc, result)
+    }
+
+    @Test
+    fun parseMapWithWithAdvancedKeys() {
+
+        val datePoint = Date.from(Instant.parse("2040-12-12T10:21:12Z"))
+
+        val doc = BsonDocument().apply {
+            put("itemsDate", BsonDocument().apply {
+                put(datePoint.time.toString(), BsonString("point"))
+            })
+            put("itemsBigDecimal", BsonDocument().apply {
+                put("3.14159265", BsonString("PI"))
+            })
+        }
+
+        val result = kBson.parse(WrapperMapWithAdvancedKey.serializer(), doc)
+
+        assertEquals(WrapperMapWithAdvancedKey(
+                mapOf(datePoint to "point"),
+                mapOf(BigDecimal("3.14159265") to "PI")
+        ), result)
     }
 }

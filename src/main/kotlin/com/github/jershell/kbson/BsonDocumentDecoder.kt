@@ -255,22 +255,54 @@ class BsonDocumentDecoder(
 
     fun decodeTaggedDateTime(): Long {
         val tag: String = this.currentTag
-        return document.getValueByPath(tag).asDateTime().value
+        return when {
+            structuresKindStack.lastOrNull() == StructureKind.MAP -> {
+                return when (mapStack.last().state) {
+                    STATE.NAME -> decodeMapKey(tag).toLong()
+                    STATE.VALUE -> document.getValueByPath(tag).asDateTime().value
+                }
+            }
+            else ->  document.getValueByPath(tag).asDateTime().value
+        }
     }
 
     fun decodeTaggedDecimal128(): Decimal128 {
         val tag: String = this.currentTag
-        return document.getValueByPath(tag).asDecimal128().value
+        return when {
+            structuresKindStack.lastOrNull() == StructureKind.MAP -> {
+                return when (mapStack.last().state) {
+                    STATE.NAME -> Decimal128(decodeMapKey(tag).toBigDecimal())
+                    STATE.VALUE -> document.getValueByPath(tag).asDecimal128().value
+                }
+            }
+            else ->  document.getValueByPath(tag).asDecimal128().value
+        }
     }
 
     fun decodeByteArray(): ByteArray {
         val tag: String = this.currentTag
-        return document.getValueByPath(tag).asBinary().data
+        return when {
+            structuresKindStack.lastOrNull() == StructureKind.MAP -> {
+                return when (mapStack.last().state) {
+                    STATE.NAME -> throw SerializationException("ByteArray is not supported as a key of map")
+                    STATE.VALUE -> document.getValueByPath(tag).asBinary().data
+                }
+            }
+            else ->  document.getValueByPath(tag).asBinary().data
+        }
     }
 
     fun decodeObjectId(): ObjectId {
         val tag: String = this.currentTag
-        return document.getValueByPath(tag).asObjectId().value
+        return when {
+            structuresKindStack.lastOrNull() == StructureKind.MAP -> {
+                return when (mapStack.last().state) {
+                    STATE.NAME -> ObjectId(decodeMapKey(tag))
+                    STATE.VALUE -> decodeMapValue(tag).asObjectId().value
+                }
+            }
+            else -> document.getValueByPath(tag).asObjectId().value
+        }
     }
 
     override fun decodeCollectionSize(desc: SerialDescriptor): Int {
@@ -280,7 +312,6 @@ class BsonDocumentDecoder(
             else -> super.decodeCollectionSize(desc)
         }
     }
-
 
     override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeDecoder {
         if (desc.kind !is UnionKind) {
