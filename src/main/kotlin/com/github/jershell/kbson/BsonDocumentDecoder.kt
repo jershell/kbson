@@ -385,14 +385,14 @@ class BsonDocumentDecoder(
 
     private fun decodeMapKey(tag: String): String {
         val map = mapStack.last()
-        val key = extractField(tag).toInt()
+        val key = extractField(tag).toInt() / 2
         map.state = STATE.VALUE
         return map.names[key]
     }
 
     private fun decodeMapValue(tag: String): BsonValue {
         val map = mapStack.last()
-        val key = extractField(tag).toInt()
+        val key = extractField(tag).toInt() / 2 + 1
         map.state = STATE.NAME
         return map.values[key]
     }
