@@ -1,11 +1,11 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.1.4"
+val LIBRARY_VERSION_NAME = "0.1.5"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "0.11.1"
+val KOTLINX_SERIALIZATION_RUNTIME = "0.13.0"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -124,7 +124,7 @@ dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:$KOTLINX_SERIALIZATION_RUNTIME")
-    implementation("org.mongodb:bson:3.11.0")
+    implementation("org.mongodb:bson:3.11.1")
 
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")

@@ -64,11 +64,18 @@ class BsonDocumentDecoder(
         tag.split(".").forEachIndexed { index, descIdx ->
             val type = container?.bsonType
             val keyKind = structuresKindStack[index]
+            // translate key map by tag[MapReadState.Value]
             val key = if (keyKind == StructureKind.MAP) {
-                val idx = descIdx.toInt() - 1
+                val isKey = descIdx.toInt() % 2 == 0
+                val idx = descIdx.toInt() / 2
                 mapIndex++
-                // cast idx to key_name
-                mapStack[mapIndex - 1].names[idx]
+                val pos = mapIndex - 1
+
+//                if(!isKey) {
+//                    throw SerializationException("getValueByPath expected key, but it value? $tag")
+//                }
+
+                mapStack[pos].names[idx]
             } else descIdx
 
             if (container == null) {
@@ -94,11 +101,16 @@ class BsonDocumentDecoder(
 
             // translate key map by tag[MapReadState.Value]
             val key = if (keyKind == StructureKind.MAP) {
+                val isKey = descIdx.toInt() % 2 == 0
+                val idx = descIdx.toInt() / 2
                 mapIndex++
                 val pos = mapIndex - 1
-                // Since map tag value has offset + 1 from map tag names
-                // but now necessary name
-                mapStack[pos].names.get(descIdx.toInt() - 1)
+
+//                if(!isKey) {
+//                    throw SerializationException("getValueByPath expected key, but it value? $tag")
+//                }
+
+                mapStack[pos].names[idx]
             } else descIdx
 
 
@@ -327,7 +339,7 @@ class BsonDocumentDecoder(
                     val nextMap = document.getValueByPath(path).asDocument()
                     mapStack.add(MapElement(
                             names = nextMap.keys.toList(),
-                            values = listOf<BsonValue>(BsonInt32(-1)) + nextMap.values.toList()
+                            values = nextMap.values.toList()
                     ))
                 }
                 is StructureKind.LIST -> {
@@ -385,15 +397,15 @@ class BsonDocumentDecoder(
 
     private fun decodeMapKey(tag: String): String {
         val map = mapStack.last()
-        val key = extractField(tag).toInt()
+        val idx = extractField(tag).toInt() / 2
         map.state = STATE.VALUE
-        return map.names[key]
+        return map.names[idx]
     }
 
     private fun decodeMapValue(tag: String): BsonValue {
         val map = mapStack.last()
-        val key = extractField(tag).toInt()
+        val idx = extractField(tag).toInt() / 2
         map.state = STATE.NAME
-        return map.values[key]
+        return map.values[idx]
     }
 }
