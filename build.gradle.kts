@@ -55,6 +55,24 @@ tasks.register<Jar>("javadocJar") {
     from("$rootDir/README.md")
 }
 
+fun printResults(desc: TestDescriptor, result: TestResult) {
+    if (desc.parent != null) {
+        val output = result.run {
+            "Results: $resultType (" +
+                    "$testCount tests, " +
+                    "$successfulTestCount successes, " +
+                    "$failedTestCount failures, " +
+                    "$skippedTestCount skipped" +
+                    ")"
+        }
+        val testResultLine = "|  $output  |"
+        val repeatLength = testResultLine.length
+        val seperationLine = "-".repeat(repeatLength)
+        println(seperationLine)
+        println(testResultLine)
+        println(seperationLine)
+    }
+}
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
@@ -87,10 +105,9 @@ publishing {
     }
 }
 
-
 bintray {
-    user = project.property("user_name").toString()
-    key = project.property("apikey").toString()
+    user = if(project.hasProperty("user_name")) project.property("user_name").toString() else ""
+    key = if(project.hasProperty("apikey")) project.property("apikey").toString() else ""
     publish = true
     override = false
     setPublications("mavenJava")
