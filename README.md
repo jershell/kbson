@@ -25,16 +25,17 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.jershell:kbson:0.1.4")
+    implementation("com.github.jershell:kbson:0.1.5")
 }
 ```
 
 build.gradle
 ```groovy
 dependencies {
-    implementation 'com.github.jershell:kbson:0.1.4'
+    implementation 'com.github.jershell:kbson:0.1.5'
 }
 ```
+
 
 # Usage samples
 ##### Parsing from BSON to a Kotlin object
@@ -129,6 +130,9 @@ encodeDefaults = "true" // specifies whether default values are encoded.
 @NonEncodeNull useful for item _id mongodb
 
 The default enum class supported like string. You can also override it
+
+kbson before 0.1.5 use kotlinx.serialization 0.11.x
+kbson after 0.1.5 use kotlinx.serialization 0.13.x
 
 # Contributing to kbson
 Pull requests and bug reports are always welcome!
