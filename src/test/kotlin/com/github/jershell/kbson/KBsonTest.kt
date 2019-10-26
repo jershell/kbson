@@ -1210,4 +1210,43 @@ class KBsonTest {
                 mapOf(BigDecimal("3.14159265") to "PI")
         ), result)
     }
+
+    @Test
+    fun parseMaps() {
+        val foo = Foo(
+                key_A = mapOf(
+                        "key_0" to "value_0",
+                        "key_1" to "value_1",
+                        "key_2" to "value_2",
+                        "key_3" to "value_3",
+                        "key_4" to "value_4"
+                ),
+                key_B = mapOf(
+                        "a" to "a2",
+                        "b" to "b2",
+                        "c" to "c2",
+                        "d" to "d2",
+                        "e" to "e2"
+                )
+        )
+
+        val doc = BsonDocument().apply {
+            put("key_A", BsonDocument().apply {
+                put("key_0", BsonString("value_0"))
+                put("key_1", BsonString("value_1"))
+                put("key_2", BsonString("value_2"))
+                put("key_3", BsonString("value_3"))
+                put("key_4", BsonString("value_4"))
+            })
+            put("key_B", BsonDocument().apply {
+                put("a", BsonString("a2"))
+                put("b", BsonString("b2"))
+                put("c", BsonString("c2"))
+                put("d", BsonString("d2"))
+                put("e", BsonString("e2"))
+            })
+        }
+        val result = kBson.parse(Foo.serializer(), doc)
+        assertEquals(foo, result)
+    }
 }

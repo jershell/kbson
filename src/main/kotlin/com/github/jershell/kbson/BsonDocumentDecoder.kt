@@ -66,15 +66,9 @@ class BsonDocumentDecoder(
             val keyKind = structuresKindStack[index]
             // translate key map by tag[MapReadState.Value]
             val key = if (keyKind == StructureKind.MAP) {
-                val isKey = descIdx.toInt() % 2 == 0
                 val idx = descIdx.toInt() / 2
                 mapIndex++
                 val pos = mapIndex - 1
-
-//                if(!isKey) {
-//                    throw SerializationException("getValueByPath expected key, but it value? $tag")
-//                }
-
                 mapStack[pos].names[idx]
             } else descIdx
 
@@ -101,15 +95,9 @@ class BsonDocumentDecoder(
 
             // translate key map by tag[MapReadState.Value]
             val key = if (keyKind == StructureKind.MAP) {
-                val isKey = descIdx.toInt() % 2 == 0
                 val idx = descIdx.toInt() / 2
                 mapIndex++
                 val pos = mapIndex - 1
-
-//                if(!isKey) {
-//                    throw SerializationException("getValueByPath expected key, but it value? $tag")
-//                }
-
                 mapStack[pos].names[idx]
             } else descIdx
 

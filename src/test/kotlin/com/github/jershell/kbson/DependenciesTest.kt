@@ -14,6 +14,7 @@ import com.github.jershell.kbson.models.polymorph.StringMessage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UnstableDefault
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
 import org.bson.BsonDocument
@@ -47,9 +48,11 @@ class DependenciesTest {
         """.trimIndent()
 
         val target = AAA(mapOf(EBA(2.0) to 20.toByte(), EBA(3.0) to 30.toByte()))
-        assertEquals(exp, Json.nonstrict.stringify(AAA.serializer(), target))
 
-        assertEquals(target, Json.nonstrict.parse(AAA.serializer(), exp))
+        val cfg = JsonConfiguration.Default.copy(allowStructuredMapKeys = true, strictMode = false, useArrayPolymorphism = false)
+        assertEquals(exp, Json(configuration = cfg).stringify(AAA.serializer(), target))
+
+        assertEquals(target, Json(configuration = cfg).parse(AAA.serializer(), exp))
 
     }
 
