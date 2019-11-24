@@ -1,12 +1,18 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.*
-import kotlinx.serialization.Encoder
+import kotlinx.serialization.CompositeEncoder
+import kotlinx.serialization.ElementValueEncoder
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.PolymorphicKind
+import kotlinx.serialization.SerialDescriptor
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.internal.*
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.StructureKind
+import kotlinx.serialization.UnionKind
+import kotlinx.serialization.internal.PairClassDesc
+import kotlinx.serialization.internal.TripleSerializer
 import kotlinx.serialization.modules.SerialModule
 import org.bson.BsonBinary
-import org.bson.BsonDocumentWriter
 import org.bson.BsonWriter
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
@@ -35,7 +41,7 @@ open class BsonEncoder(
                     writer.writeStartDocument()
                 }
             }
-            UnionKind.OBJECT, UnionKind.SEALED, UnionKind.POLYMORPHIC -> {
+            UnionKind.OBJECT, is PolymorphicKind -> {
                 writer.writeStartDocument()
                 writer.writeName(configuration.classDiscriminator)
                 hasBegin = true
@@ -106,7 +112,7 @@ open class BsonEncoder(
         writer.writeNull()
     }
 
-    override fun encodeEnum(enumDescription: EnumDescriptor, ordinal: Int) {
+    override fun encodeEnum(enumDescription: SerialDescriptor, ordinal: Int) {
         writer.writeString(enumDescription.getElementName(ordinal))
     }
 

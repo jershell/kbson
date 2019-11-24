@@ -22,7 +22,7 @@ class KBson(override val context: SerialModule = DefaultModule, private val conf
     }
 
     fun <T> parse(deserializer: DeserializationStrategy<T>, doc: BsonDocument): T {
-        return BsonDocumentDecoder(doc.asBsonReader(), context, configuration).decode(deserializer)
+        return BsonFlexibleDecoder((doc.asBsonReader() as AbstractBsonReader), context, configuration).decode(deserializer)
     }
 
     fun <T> load(deserializer: DeserializationStrategy<T>, doc: ByteArray): T {

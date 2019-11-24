@@ -1,9 +1,16 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.*
+import kotlinx.serialization.Decoder
 import kotlinx.serialization.Encoder
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialDescriptor
+import kotlinx.serialization.SerialInfo
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializer
 import kotlinx.serialization.internal.StringDescriptor
 import kotlinx.serialization.modules.serializersModuleOf
+import kotlinx.serialization.withName
+import org.bson.BsonType
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
@@ -24,7 +31,16 @@ object DateSerializer : KSerializer<Date> {
     }
 
     override fun deserialize(decoder: Decoder): Date {
-        return when(decoder) {
+        return when (decoder) {
+            is FlexibleDecoder -> {
+                Date(
+                    when (decoder.reader.currentBsonType) {
+                        BsonType.STRING -> decoder.decodeString().toLong()
+                        BsonType.DATE_TIME -> decoder.reader.readDateTime()
+                        else -> throw SerializationException("Unsupported ${decoder.reader.currentBsonType} reading date")
+                    }
+                )
+            }
             is BsonDocumentDecoder -> {
                 Date(decoder.decodeTaggedDateTime())
             }
@@ -40,7 +56,7 @@ object DateSerializer : KSerializer<Date> {
 @Serializer(forClass = BigDecimal::class)
 object BigDecimalSerializer : KSerializer<BigDecimal> {
     override val descriptor: SerialDescriptor =
-            StringDescriptor.withName("BigDecimalSerializer")
+        StringDescriptor.withName("BigDecimalSerializer")
 
     override fun serialize(encoder: Encoder, obj: BigDecimal) {
         encoder as BsonEncoder
@@ -48,7 +64,14 @@ object BigDecimalSerializer : KSerializer<BigDecimal> {
     }
 
     override fun deserialize(decoder: Decoder): BigDecimal {
-        return when(decoder) {
+        return when (decoder) {
+            is FlexibleDecoder -> {
+                when (decoder.reader.currentBsonType) {
+                    BsonType.STRING -> BigDecimal(decoder.decodeString())
+                    BsonType.DECIMAL128 -> decoder.reader.readDecimal128().bigDecimalValue()
+                    else -> throw SerializationException("Unsupported ${decoder.reader.currentBsonType} reading decimal128")
+                }
+            }
             is BsonDocumentDecoder -> {
                 decoder.decodeTaggedDecimal128().bigDecimalValue()
             }
@@ -64,7 +87,7 @@ object BigDecimalSerializer : KSerializer<BigDecimal> {
 @Serializer(forClass = ByteArray::class)
 object ByteArraySerializer : KSerializer<ByteArray> {
     override val descriptor: SerialDescriptor =
-            StringDescriptor.withName("ByteArraySerializer")
+        StringDescriptor.withName("ByteArraySerializer")
 
     override fun serialize(encoder: Encoder, obj: ByteArray) {
         encoder as BsonEncoder
@@ -72,7 +95,10 @@ object ByteArraySerializer : KSerializer<ByteArray> {
     }
 
     override fun deserialize(decoder: Decoder): ByteArray {
-        return when(decoder) {
+        return when (decoder) {
+            is FlexibleDecoder -> {
+                decoder.reader.readBinaryData().data
+            }
             is BsonDocumentDecoder -> {
                 decoder.decodeByteArray()
             }
@@ -96,7 +122,14 @@ object ObjectIdSerializer : KSerializer<ObjectId> {
     }
 
     override fun deserialize(decoder: Decoder): ObjectId {
-        return when(decoder) {
+        return when (decoder) {
+            is FlexibleDecoder -> {
+                when (decoder.reader.currentBsonType) {
+                    BsonType.STRING -> ObjectId(decoder.decodeString())
+                    BsonType.OBJECT_ID -> decoder.reader.readObjectId()
+                    else -> throw SerializationException("Unsupported ${decoder.reader.currentBsonType} reading object id")
+                }
+            }
             is BsonDocumentDecoder -> {
                 decoder.decodeObjectId()
             }
@@ -109,9 +142,11 @@ object ObjectIdSerializer : KSerializer<ObjectId> {
     }
 }
 
-val DefaultModule = serializersModuleOf(mapOf(
+val DefaultModule = serializersModuleOf(
+    mapOf(
         ObjectId::class to ObjectIdSerializer,
         BigDecimal::class to BigDecimalSerializer,
         ByteArray::class to ByteArraySerializer,
         Date::class to DateSerializer
-))
+    )
+)

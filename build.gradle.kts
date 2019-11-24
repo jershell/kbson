@@ -5,7 +5,7 @@ val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "0.13.0"
+val KOTLINX_SERIALIZATION_RUNTIME = "0.14.0"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -16,7 +16,7 @@ val CONTACT_EMAIL = "jershell@mail.ru"
 
 buildscript {
     repositories { jcenter() }
-    val kotlin_version = "1.3.50"
+    val kotlin_version = "1.3.60"
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
@@ -25,7 +25,7 @@ buildscript {
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    id("org.jetbrains.kotlin.jvm").version("1.3.50")
+    id("org.jetbrains.kotlin.jvm").version("1.3.60")
     id("maven-publish")
     id("com.jfrog.bintray") version "1.8.4"
 }
