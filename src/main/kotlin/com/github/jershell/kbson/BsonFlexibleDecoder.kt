@@ -123,15 +123,23 @@ class BsonFlexibleDecoder(
 
     //to handle not optional nullable properties
     private var indexesSet: BooleanArray? = null
-    private var containsNotOptionalNullable: Boolean? = false
+    private var containsNotOptionalNullable: Boolean? = null
     private var checkNotOptionalNullable = false
 
     private fun initNotOptionalProperties(desc: SerialDescriptor) {
         if (containsNotOptionalNullable == null) {
             for (i in 0 until desc.elementsCount) {
-                if (desc.getElementDescriptor(i).isNullable && !desc.isElementOptional(i)) {
-                    containsNotOptionalNullable = true
-                    break
+                if (!desc.isElementOptional(i)) {
+                    val nullable =
+                        try {
+                            desc.getElementDescriptor(i).isNullable
+                        } catch (e: Exception) {
+                            true
+                        }
+                    if (nullable) {
+                        containsNotOptionalNullable = true
+                        break
+                    }
                 }
             }
             if (containsNotOptionalNullable == null) {
