@@ -133,7 +133,7 @@ class BsonDocumentDecoder(
         }
     }
 
-    override fun decodeTaggedEnum(tag: String, enumDescription: EnumDescriptor): Int {
+    override fun decodeTaggedEnum(tag: String, enumDescription: SerialDescriptor): Int {
         val name = document.getValueByPath(tag).asString().value
         val value = enumDescription.getElementIndex(name)
         return if (value == CompositeDecoder.UNKNOWN_NAME) {

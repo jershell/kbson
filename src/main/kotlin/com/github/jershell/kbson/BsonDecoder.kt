@@ -44,7 +44,7 @@ open class BsonDecoder(
         return reader.readBoolean()
     }
 
-    override fun decodeEnum(enumDescription: EnumDescriptor): Int {
+    override fun decodeEnum(enumDescription: SerialDescriptor): Int {
         val name = reader.readString()
         val value = enumDescription.getElementIndex(name)
         return if (value == CompositeDecoder.UNKNOWN_NAME) {
