@@ -1,5 +1,5 @@
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.jershell/kbson/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.jershell/kbson)
-[ ![JCenter](https://api.bintray.com/packages/jershell/generic/kbson/images/download.svg?version=latest) ](https://bintray.com/jershell/generic/kbson)
+![Maven Central](https://img.shields.io/maven-central/v/com.github.jershell/kbson)  ![Bintray](https://img.shields.io/bintray/v/jershell/generic/kbson?label=jcenter)
+
 # kbson
 
 # What is this?
