@@ -11,10 +11,11 @@ import kotlinx.serialization.internal.StringDescriptor
 import kotlinx.serialization.modules.serializersModuleOf
 import kotlinx.serialization.withName
 import org.bson.BsonType
+import org.bson.UuidRepresentation
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
-import java.util.Date
+import java.util.*
 
 @SerialInfo
 @Target(AnnotationTarget.PROPERTY)
@@ -111,7 +112,6 @@ object ByteArraySerializer : KSerializer<ByteArray> {
     }
 }
 
-
 @Serializer(forClass = ObjectId::class)
 object ObjectIdSerializer : KSerializer<ObjectId> {
     override val descriptor: SerialDescriptor = StringDescriptor.withName("ObjectIdSerializer")
@@ -142,11 +142,39 @@ object ObjectIdSerializer : KSerializer<ObjectId> {
     }
 }
 
+@Serializer(forClass = UUID::class)
+object UUIDSerializer : KSerializer<UUID> {
+    override val descriptor: SerialDescriptor = StringDescriptor.withName("UUIDSerializer")
+
+    override fun serialize(encoder: Encoder, obj: UUID) {
+        encoder as BsonEncoder
+        encoder.encodeUUID(obj, UuidRepresentation.STANDARD)
+    }
+
+    override fun deserialize(decoder: Decoder): UUID {
+        return when (decoder) {
+            is FlexibleDecoder -> {
+                when (decoder.reader.currentBsonType) {
+                    BsonType.STRING -> {
+                       UUID.fromString(decoder.decodeString())
+                    }
+                    BsonType.BINARY -> {
+                        decoder.reader.readBinaryData().asUuid(UuidRepresentation.STANDARD)
+                    }
+                    else -> throw SerializationException("Unsupported ${decoder.reader.currentBsonType} reading object id")
+                }
+            }
+            else -> throw SerializationException("Unknown decoder type")
+        }
+    }
+}
+
 val DefaultModule = serializersModuleOf(
     mapOf(
         ObjectId::class to ObjectIdSerializer,
         BigDecimal::class to BigDecimalSerializer,
         ByteArray::class to ByteArraySerializer,
-        Date::class to DateSerializer
+        Date::class to DateSerializer,
+        UUID::class to UUIDSerializer
     )
 )

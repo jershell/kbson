@@ -11,6 +11,7 @@ BSON types supported:
 - String 
 - Array
 - Binary 
+- UUID
 - ObjectId
 - Boolean
 - Date
@@ -25,14 +26,14 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.jershell:kbson:0.2.0")
+    implementation("com.github.jershell:kbson:0.2.1")
 }
 ```
 
 build.gradle
 ```groovy
 dependencies {
-    implementation 'com.github.jershell:kbson:0.2.0'
+    implementation 'com.github.jershell:kbson:0.2.1'
 }
 ```
 
@@ -50,14 +51,24 @@ val kBson = KBson()
 @Serializable
 data class Simple (
         val valueString: String,
+
         val valueDouble: Double,
+
         val valueFloat: Float,
+
         val valueLong: Long,
+
         val valueChar: Char,
+
         val valueBool: Boolean,
+
         @NonEncodeNull
         @ContextualSerialization
         val _id: ObjectId? = null,
+
+        @ContextualSerialization
+        val uuid: UUID,
+
         val valueInt: Int
 )
 

@@ -29,6 +29,7 @@ private data class MapElement(
     var state: STATE = STATE.NAME
 }
 
+@Deprecated("Use FlexibleDecoder")
 class BsonDocumentDecoder(
         reader: BsonReader,
         override val context: SerialModule,

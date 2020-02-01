@@ -3,29 +3,7 @@
  */
 package com.github.jershell.kbson
 
-import com.github.jershell.kbson.models.Blob
-import com.github.jershell.kbson.models.ChildEntity
-import com.github.jershell.kbson.models.Complex
-import com.github.jershell.kbson.models.Custom
-import com.github.jershell.kbson.models.EnumFoo
-import com.github.jershell.kbson.models.Foo
-import com.github.jershell.kbson.models.Nested
-import com.github.jershell.kbson.models.NestedComplex
-import com.github.jershell.kbson.models.NestedMap
-import com.github.jershell.kbson.models.NullableClass
-import com.github.jershell.kbson.models.NullableCollection
-import com.github.jershell.kbson.models.NullableDefaultClass
-import com.github.jershell.kbson.models.NullableNotOptionalClass
-import com.github.jershell.kbson.models.OptionalClass
-import com.github.jershell.kbson.models.SEX
-import com.github.jershell.kbson.models.SexWithValue
-import com.github.jershell.kbson.models.Simple
-import com.github.jershell.kbson.models.SimpleNG
-import com.github.jershell.kbson.models.Value
-import com.github.jershell.kbson.models.WithPair
-import com.github.jershell.kbson.models.WrapperMapWithAdvancedKey
-import com.github.jershell.kbson.models.WrapperMapWithObjectId
-import com.github.jershell.kbson.models.WrapperSet
+import com.github.jershell.kbson.models.*
 import com.github.jershell.kbson.models.polymorph.FooTimestampedMessage
 import com.github.jershell.kbson.models.polymorph.IntMessage
 import com.github.jershell.kbson.models.polymorph.Message
@@ -39,6 +17,7 @@ import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
+import org.bson.UuidRepresentation
 import org.bson.BsonArray
 import org.bson.BsonBinary
 import org.bson.BsonBoolean
@@ -63,6 +42,7 @@ import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import java.util.UUID
 
 
 class KBsonTest {
@@ -1391,5 +1371,45 @@ class KBsonTest {
         }
         val result = kBson.parse(Foo.serializer(), doc)
         assertEquals(foo, result)
+    }
+
+    @Test
+    fun stringifyUUID() {
+        val uuuid1 = UUID.randomUUID()
+        val uuuid2 = UUID.randomUUID()
+        val uuuid3 = UUID.randomUUID()
+
+        val uuidRepresentation: UuidRepresentation = UuidRepresentation.STANDARD
+
+        val document = BsonDocument().apply {
+            append("uuid", BsonBinary(uuuid1, uuidRepresentation))
+            append("map", BsonDocument().apply {
+                append(uuuid2.toString(), BsonBinary(uuuid3, uuidRepresentation))
+            })
+        }
+        val result = kBson.stringify(WithUUID.serializer(), WithUUID(uuuid1, mapOf(uuuid2.toString() to uuuid3)))
+
+        assertEquals(document, result)
+    }
+
+    @Test
+    fun parseUUID() {
+        val uuuid1 = UUID.randomUUID()
+        val uuuid2 = UUID.randomUUID()
+        val uuuid3 = UUID.randomUUID()
+
+        val uuidRepresentation: UuidRepresentation = UuidRepresentation.STANDARD
+
+        val document = BsonDocument().apply {
+            append("uuid", BsonBinary(uuuid1, uuidRepresentation))
+            append("map", BsonDocument().apply {
+                append(uuuid2.toString(), BsonBinary(uuuid3, uuidRepresentation))
+            })
+        }
+
+        val result = kBson.parse(WithUUID.serializer(), document)
+
+        assertEquals(WithUUID(uuuid1, mapOf(uuuid2.toString() to uuuid3)), result)
+
     }
 }

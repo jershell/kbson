@@ -7,7 +7,7 @@ import kotlinx.serialization.internal.EnumDescriptor
 import kotlinx.serialization.modules.SerialModule
 import org.bson.*
 
-
+@Deprecated("Use FlexibleDecoder")
 open class BsonDecoder(
         val reader: BsonReader,
         override val context: SerialModule,
