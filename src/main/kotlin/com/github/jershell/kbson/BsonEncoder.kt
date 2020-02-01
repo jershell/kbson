@@ -14,8 +14,10 @@ import kotlinx.serialization.internal.TripleSerializer
 import kotlinx.serialization.modules.SerialModule
 import org.bson.BsonBinary
 import org.bson.BsonWriter
+import org.bson.UuidRepresentation
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
+import java.util.*
 
 
 open class BsonEncoder(
@@ -209,6 +211,14 @@ open class BsonEncoder(
             STATE.VALUE -> writer.writeBinaryData(BsonBinary(value))
             // I think we can use base64, but files can be big
             STATE.NAME -> throw SerializationException("ByteArray is not supported as a key of map")
+        }
+    }
+
+    fun encodeUUID(value: UUID, uuidRepresentation: UuidRepresentation = UuidRepresentation.STANDARD) {
+        when (state) {
+            STATE.VALUE -> writer.writeBinaryData(BsonBinary(value, uuidRepresentation))
+            // I think we can use base64, but files can be big
+            STATE.NAME -> throw SerializationException("UUID is not supported as a key of map")
         }
     }
 
