@@ -1,17 +1,9 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.CompositeDecoder
+import kotlinx.serialization.*
 import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
 import kotlinx.serialization.CompositeDecoder.Companion.UNKNOWN_NAME
-import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.ElementValueDecoder
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.PolymorphicKind
-import kotlinx.serialization.PolymorphicSerializer
-import kotlinx.serialization.SerialDescriptor
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.StructureKind
-import kotlinx.serialization.decode
+import kotlinx.serialization.builtins.AbstractDecoder
 import kotlinx.serialization.modules.SerialModule
 import org.bson.AbstractBsonReader
 import org.bson.AbstractBsonReader.State
@@ -21,7 +13,7 @@ abstract class FlexibleDecoder(
     val reader: AbstractBsonReader,
     override val context: SerialModule,
     val configuration: Configuration
-) : ElementValueDecoder() {
+) : AbstractDecoder() {
 
     override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeDecoder {
         return when (desc.kind) {
@@ -210,6 +202,10 @@ private class PolymorphismDecoder(
     context: SerialModule,
     configuration: Configuration
 ) : FlexibleDecoder(reader, context, configuration) {
+
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int = READ_DONE
+
+    override fun decodeSequentially(): Boolean = true
 
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (deserializer !is PolymorphicSerializer<*>) {

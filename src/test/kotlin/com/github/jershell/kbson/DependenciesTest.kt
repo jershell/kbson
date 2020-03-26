@@ -17,9 +17,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
-import org.bson.BsonDocument
-import org.bson.BsonInt32
-import org.bson.BsonString
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,6 +38,13 @@ class DependenciesTest {
 //        assertEquals("""{"valueString":"text","valueDouble":42.0,"valueFloat":42.0,"valueInt":42}""", Json.nonstrict.stringify(Simple.serializer(), target))
 //    }
 
+    val nonstrictJson = Json(JsonConfiguration(
+          isLenient = true,
+          ignoreUnknownKeys = true,
+          serializeSpecialFloatingPointValues = true,
+          useArrayPolymorphism = true
+    ))
+
     @Test
     fun mapSP() {
         val exp = """
@@ -49,7 +53,7 @@ class DependenciesTest {
 
         val target = AAA(mapOf(EBA(2.0) to 20.toByte(), EBA(3.0) to 30.toByte()))
 
-        val cfg = JsonConfiguration.Default.copy(allowStructuredMapKeys = true, strictMode = false, useArrayPolymorphism = false)
+        val cfg = JsonConfiguration.Default.copy(allowStructuredMapKeys = true, isLenient = true, useArrayPolymorphism = false)
         assertEquals(exp, Json(configuration = cfg).stringify(AAA.serializer(), target))
 
         assertEquals(target, Json(configuration = cfg).parse(AAA.serializer(), exp))
@@ -59,7 +63,7 @@ class DependenciesTest {
     @Test
     fun JsonParse() {
         val target = Simple("text", PI, 42.0f, 42L, '€', true, 42)
-        assertEquals(target, Json.nonstrict.parse(Simple.serializer(),
+        assertEquals(target, nonstrictJson.parse(Simple.serializer(),
                 """
                     {
                     "valueLong": 42,
@@ -76,9 +80,7 @@ class DependenciesTest {
     @Test
     fun JsonParseNullableClass() {
         val n = OptionalClass()
-        val res = Json
-                .nonstrict
-                .parse(OptionalClass.serializer(), """{}""")
+        val res = nonstrictJson.parse(OptionalClass.serializer(), """{}""")
 
         assertEquals(n.reqString, res.reqString)
     }

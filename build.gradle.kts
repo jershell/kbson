@@ -1,11 +1,11 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.2.1"
+val LIBRARY_VERSION_NAME = "0.2.2"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "0.14.0"
+val KOTLINX_SERIALIZATION_RUNTIME = "0.20.0"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -16,7 +16,7 @@ val CONTACT_EMAIL = "jershell@mail.ru"
 
 buildscript {
     repositories { jcenter() }
-    val kotlin_version = "1.3.60"
+    val kotlin_version = "1.3.71"
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
@@ -25,7 +25,7 @@ buildscript {
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    id("org.jetbrains.kotlin.jvm").version("1.3.60")
+    id("org.jetbrains.kotlin.jvm").version("1.3.71")
     id("maven-publish")
     id("com.jfrog.bintray") version "1.8.4"
 }
@@ -73,6 +73,7 @@ fun printResults(desc: TestDescriptor, result: TestResult) {
         println(seperationLine)
     }
 }
+
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
@@ -149,5 +150,3 @@ dependencies {
     // Use the Kotlin JUnit integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
-
-
