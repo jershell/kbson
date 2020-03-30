@@ -26,14 +26,14 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.jershell:kbson:0.2.1")
+    implementation("com.github.jershell:kbson:0.2.2")
 }
 ```
 
 build.gradle
 ```groovy
 dependencies {
-    implementation 'com.github.jershell:kbson:0.2.1'
+    implementation 'com.github.jershell:kbson:0.2.2'
 }
 ```
 
@@ -145,6 +145,7 @@ The default enum class supported like string. You can also override it
 kbson before 0.1.5 use kotlinx.serialization 0.11.x
 kbson after 0.1.5 use kotlinx.serialization 0.13.x
 kbson after 0.2.0 use kotlinx.serialization 0.14.x
+kbson after 0.2.2 use kotlinx.serialization 0.20.0 and kotlin 1.3.71
 
 # Contributing to kbson
 Pull requests and bug reports are always welcome!
