@@ -1,9 +1,8 @@
 package com.github.jershell.kbson
 
 import kotlinx.serialization.*
-import kotlinx.serialization.CompositeDecoder.Companion.READ_ALL
 import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
-import kotlinx.serialization.internal.EnumDescriptor
+import kotlinx.serialization.builtins.AbstractDecoder
 import kotlinx.serialization.modules.SerialModule
 import org.bson.*
 
@@ -12,7 +11,7 @@ open class BsonDecoder(
         val reader: BsonReader,
         override val context: SerialModule,
         private val configuration: Configuration
-) : ElementValueDecoder() {
+) : AbstractDecoder() {
     var idx = 0
     private val abReader: AbstractBsonReader
         get() = reader as AbstractBsonReader

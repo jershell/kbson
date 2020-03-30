@@ -6,14 +6,10 @@ import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
 import kotlinx.serialization.modules.SerialModule
 import kotlinx.serialization.Decoder
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.internal.ArrayListClassDesc
-import kotlinx.serialization.internal.EnumDescriptor
-import kotlinx.serialization.internal.LinkedHashMapClassDesc
-import kotlinx.serialization.internal.ListLikeDescriptor
+import kotlinx.serialization.internal.NamedValueDecoder
 import org.bson.*
 import org.bson.codecs.BsonDocumentCodec
 import org.bson.codecs.DecoderContext
-import org.bson.codecs.DocumentCodec
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 
@@ -29,6 +25,7 @@ private data class MapElement(
     var state: STATE = STATE.NAME
 }
 
+@InternalSerializationApi
 @Deprecated("Use FlexibleDecoder")
 class BsonDocumentDecoder(
         reader: BsonReader,
@@ -307,9 +304,9 @@ class BsonDocumentDecoder(
     }
 
     override fun decodeCollectionSize(desc: SerialDescriptor): Int {
-        return when (desc) {
-            is LinkedHashMapClassDesc -> mapStack.last().names.size
-            is ListLikeDescriptor -> listStack.last().size
+        return when (desc.kind) {
+            StructureKind.MAP -> mapStack.last().names.size
+            StructureKind.LIST -> listStack.last().size
             else -> super.decodeCollectionSize(desc)
         }
     }
@@ -358,7 +355,7 @@ class BsonDocumentDecoder(
         return when (desc.kind) {
             is UnionKind -> READ_ALL
             StructureKind.CLASS -> decodeObjectElementIndex(desc)
-            StructureKind.MAP, StructureKind.LIST -> super.decodeElementIndex(desc)
+            StructureKind.MAP, StructureKind.LIST -> READ_ALL
             else -> throw SerializationException("${desc.kind} unsupported")
         }
     }

@@ -1,16 +1,7 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.CompositeEncoder
-import kotlinx.serialization.ElementValueEncoder
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.PolymorphicKind
-import kotlinx.serialization.SerialDescriptor
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.StructureKind
-import kotlinx.serialization.UnionKind
-import kotlinx.serialization.internal.PairClassDesc
-import kotlinx.serialization.internal.TripleSerializer
+import kotlinx.serialization.*
+import kotlinx.serialization.builtins.AbstractEncoder
 import kotlinx.serialization.modules.SerialModule
 import org.bson.BsonBinary
 import org.bson.BsonWriter
@@ -24,7 +15,7 @@ open class BsonEncoder(
         private val writer: BsonWriter,
         override val context: SerialModule,
         private val configuration: Configuration
-) : ElementValueEncoder() {
+) : AbstractEncoder() {
 
     private var state = STATE.VALUE
     private var hasBegin = false // for UnionKind
@@ -43,7 +34,7 @@ open class BsonEncoder(
                     writer.writeStartDocument()
                 }
             }
-            UnionKind.OBJECT, is PolymorphicKind -> {
+            StructureKind.OBJECT, is PolymorphicKind -> {
                 writer.writeStartDocument()
                 writer.writeName(configuration.classDiscriminator)
                 hasBegin = true
@@ -85,7 +76,7 @@ open class BsonEncoder(
                 val name = desc.getElementName(index)
 
                 // Pair & Triple doesn't have a child description
-                if (desc !is PairClassDesc && desc !is TripleSerializer.TripleDesc) {
+                if (desc.serialName !="kotlin.Triple" && desc.serialName != "kotlin.Pair") {
                     val elemDesc = desc.getElementDescriptor(index)
                     if (elemDesc.isNullable) {
                         val ann = desc.getElementAnnotations(index).find { it is NonEncodeNull }
