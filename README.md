@@ -26,14 +26,16 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.jershell:kbson:0.2.2")
+    implementation("com.github.jershell:kbson:0.2.3")
 }
 ```
+
+or
 
 build.gradle
 ```groovy
 dependencies {
-    implementation 'com.github.jershell:kbson:0.2.2'
+    implementation 'com.github.jershell:kbson:0.2.3'
 }
 ```
 

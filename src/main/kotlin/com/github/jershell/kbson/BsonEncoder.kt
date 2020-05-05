@@ -105,8 +105,14 @@ open class BsonEncoder(
         writer.writeNull()
     }
 
-    override fun encodeEnum(enumDescription: SerialDescriptor, ordinal: Int) {
-        writer.writeString(enumDescription.getElementName(ordinal))
+
+    override fun encodeEnum(enumDescriptor: SerialDescriptor, index: Int) {
+        val value = enumDescriptor.getElementName(index)
+        if(state == STATE.NAME) {
+            writer.writeName(value)
+        }   else {
+            writer.writeString(value)
+        }
     }
 
     override fun encodeString(value: String) {
