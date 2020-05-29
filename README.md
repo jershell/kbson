@@ -26,7 +26,7 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
-    implementation("com.github.jershell:kbson:0.2.3")
+    implementation("com.github.jershell:kbson:0.3.0")
 }
 ```
 
@@ -35,7 +35,7 @@ or
 build.gradle
 ```groovy
 dependencies {
-    implementation 'com.github.jershell:kbson:0.2.3'
+    implementation 'com.github.jershell:kbson:0.3.0'
 }
 ```
 
