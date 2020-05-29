@@ -1,9 +1,17 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.*
+import kotlinx.serialization.CompositeDecoder
 import kotlinx.serialization.CompositeDecoder.Companion.READ_DONE
 import kotlinx.serialization.CompositeDecoder.Companion.UNKNOWN_NAME
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.PolymorphicKind
+import kotlinx.serialization.PolymorphicSerializer
+import kotlinx.serialization.SerialDescriptor
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.StructureKind
 import kotlinx.serialization.builtins.AbstractDecoder
+import kotlinx.serialization.decode
 import kotlinx.serialization.modules.SerialModule
 import org.bson.AbstractBsonReader
 import org.bson.AbstractBsonReader.State
@@ -15,8 +23,8 @@ abstract class FlexibleDecoder(
     val configuration: Configuration
 ) : AbstractDecoder() {
 
-    override fun beginStructure(desc: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeDecoder {
-        return when (desc.kind) {
+    override fun beginStructure(descriptor: SerialDescriptor, vararg typeParams: KSerializer<*>): CompositeDecoder {
+        return when (descriptor.kind) {
             StructureKind.CLASS -> {
                 val current = reader.currentBsonType
                 if (current == null || current == BsonType.DOCUMENT) {
@@ -36,14 +44,14 @@ abstract class FlexibleDecoder(
                 reader.readStartDocument()
                 PolymorphismDecoder(reader, context, configuration)
             }
-            else -> super.beginStructure(desc, *typeParams)
+            else -> super.beginStructure(descriptor, *typeParams)
         }
     }
 
-    override fun endStructure(desc: SerialDescriptor) {
-        when (desc.kind) {
+    override fun endStructure(descriptor: SerialDescriptor) {
+        when (descriptor.kind) {
             is StructureKind.LIST -> reader.readEndArray()
-            is StructureKind.MAP, StructureKind.CLASS -> reader.readEndDocument()
+            is StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> reader.readEndDocument()
         }
     }
 
@@ -55,9 +63,9 @@ abstract class FlexibleDecoder(
         return reader.readBoolean()
     }
 
-    override fun decodeEnum(enumDescription: SerialDescriptor): Int {
+    override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
         val name = reader.readString()
-        val value = enumDescription.getElementIndex(name)
+        val value = enumDescriptor.getElementIndex(name)
         return if (value == UNKNOWN_NAME) {
             throw SerializationException("Enum has unknown value $name")
         } else {
@@ -147,8 +155,12 @@ class BsonFlexibleDecoder(
         if (containsNotOptionalNullable!!) {
             for (i in 0 until desc.elementsCount) {
                 if (indexesSet?.get(i) != true
-                    && desc.getElementDescriptor(i).isNullable
                     && !desc.isElementOptional(i)
+                    && try {
+                        desc.getElementDescriptor(i).isNullable
+                    } catch (e: Exception) {
+                        true
+                    }
                 ) {
                     checkNotOptionalNullable = true
                     indexesSet!![i] = true
@@ -159,8 +171,8 @@ class BsonFlexibleDecoder(
         return READ_DONE
     }
 
-    override fun decodeElementIndex(desc: SerialDescriptor): Int {
-        initNotOptionalProperties(desc)
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
+        initNotOptionalProperties(descriptor)
 
         if (reader.state == State.TYPE) {
             reader.readBsonType()
@@ -168,10 +180,10 @@ class BsonFlexibleDecoder(
         return when (reader.state) {
             State.NAME -> {
                 val currentName = reader.readName()
-                val index = desc.getElementIndex(currentName)
+                val index = descriptor.getElementIndex(currentName)
                 if (index == UNKNOWN_NAME) {
                     reader.skipValue()
-                    decodeElementIndex(desc)
+                    decodeElementIndex(descriptor)
                 } else {
                     if (containsNotOptionalNullable!!) {
                         indexesSet!![index] = true
@@ -180,7 +192,7 @@ class BsonFlexibleDecoder(
                 }
             }
             else -> {
-                checkNotOptionalProperties(desc)
+                checkNotOptionalProperties(descriptor)
             }
         }
     }
@@ -202,10 +214,7 @@ private class PolymorphismDecoder(
     context: SerialModule,
     configuration: Configuration
 ) : FlexibleDecoder(reader, context, configuration) {
-
-    override fun decodeElementIndex(descriptor: SerialDescriptor): Int = READ_DONE
-
-    override fun decodeSequentially(): Boolean = true
+    private var decodeCount = 0
 
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (deserializer !is PolymorphicSerializer<*>) {
@@ -213,8 +222,21 @@ private class PolymorphismDecoder(
         }
         reader.readName()
         val type = reader.readString()
+
+        @Suppress("UNCHECKED_CAST")
         val actualSerializer = deserializer.findPolymorphicSerializer(this, type) as KSerializer<T>
         return BsonFlexibleDecoder(reader, context, configuration).decode(actualSerializer)
+    }
+
+    override fun decodeSequentially(): Boolean {
+        return true
+    }
+
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
+        if (decodeCount < 2)
+            return decodeCount++
+
+        return READ_DONE
     }
 }
 
@@ -235,11 +257,11 @@ private class MapDecoder(
         }
     }
 
-    override fun decodeEnum(enumDescription: SerialDescriptor): Int {
+    override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
         return if (key) {
-            enumDescription.getElementIndex(reader.readName()!!)
+            enumDescriptor.getElementIndex(reader.readName()!!)
         } else {
-            super.decodeEnum(enumDescription)
+            super.decodeEnum(enumDescriptor)
         }
     }
 
@@ -307,7 +329,7 @@ private class MapDecoder(
         }
     }
 
-    override fun decodeElementIndex(desc: SerialDescriptor): Int {
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         if (!key) {
             key = true
             val nextType = reader.readBsonType()
@@ -325,7 +347,7 @@ private class ListDecoder(
     configuration: Configuration
 ) : FlexibleDecoder(reader, context, configuration) {
     private var index = 0
-    override fun decodeElementIndex(desc: SerialDescriptor): Int {
+    override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         val nextType = reader.readBsonType()
         return if (nextType == BsonType.END_OF_DOCUMENT) READ_DONE else index++
     }
