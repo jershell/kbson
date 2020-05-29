@@ -1,14 +1,23 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.*
-import kotlinx.serialization.internal.StringDescriptor
+import kotlinx.serialization.Decoder
+import kotlinx.serialization.Encoder
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.PrimitiveDescriptor
+import kotlinx.serialization.PrimitiveKind
+import kotlinx.serialization.SerialDescriptor
+import kotlinx.serialization.SerialInfo
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializer
 import kotlinx.serialization.modules.serializersModuleOf
 import org.bson.BsonType
 import org.bson.UuidRepresentation
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 @SerialInfo
 @Target(AnnotationTarget.PROPERTY)
@@ -17,11 +26,11 @@ annotation class NonEncodeNull
 
 @Serializer(forClass = Date::class)
 object DateSerializer : KSerializer<Date> {
-    override val descriptor: SerialDescriptor = PrimitiveDescriptor("DateSerializer",PrimitiveKind.STRING)
+    override val descriptor: SerialDescriptor = PrimitiveDescriptor("DateSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: Date) {
+    override fun serialize(encoder: Encoder, value: Date) {
         encoder as BsonEncoder
-        encoder.encodeDateTime(obj.time)
+        encoder.encodeDateTime(value.time)
     }
 
     @InternalSerializationApi
@@ -50,11 +59,12 @@ object DateSerializer : KSerializer<Date> {
 
 @Serializer(forClass = BigDecimal::class)
 object BigDecimalSerializer : KSerializer<BigDecimal> {
-    override val descriptor: SerialDescriptor = PrimitiveDescriptor("BigDecimalSerializer",PrimitiveKind.STRING)
+    override val descriptor: SerialDescriptor =
+        PrimitiveDescriptor("BigDecimalSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: BigDecimal) {
+    override fun serialize(encoder: Encoder, value: BigDecimal) {
         encoder as BsonEncoder
-        encoder.encodeDecimal128(Decimal128(obj))
+        encoder.encodeDecimal128(Decimal128(value))
     }
 
     @InternalSerializationApi
@@ -81,11 +91,12 @@ object BigDecimalSerializer : KSerializer<BigDecimal> {
 
 @Serializer(forClass = ByteArray::class)
 object ByteArraySerializer : KSerializer<ByteArray> {
-    override val descriptor: SerialDescriptor = PrimitiveDescriptor("ByteArraySerializer",PrimitiveKind.STRING)
+    override val descriptor: SerialDescriptor =
+        PrimitiveDescriptor("ByteArraySerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: ByteArray) {
+    override fun serialize(encoder: Encoder, value: ByteArray) {
         encoder as BsonEncoder
-        encoder.encodeByteArray(obj)
+        encoder.encodeByteArray(value)
     }
 
     @InternalSerializationApi
@@ -106,13 +117,14 @@ object ByteArraySerializer : KSerializer<ByteArray> {
     }
 }
 
+
 @Serializer(forClass = ObjectId::class)
 object ObjectIdSerializer : KSerializer<ObjectId> {
-    override val descriptor: SerialDescriptor = PrimitiveDescriptor("ObjectIdSerializer",PrimitiveKind.STRING)
+    override val descriptor: SerialDescriptor = PrimitiveDescriptor("ObjectIdSerializer", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: ObjectId) {
+    override fun serialize(encoder: Encoder, value: ObjectId) {
         encoder as BsonEncoder
-        encoder.encodeObjectId(obj)
+        encoder.encodeObjectId(value)
     }
 
     @InternalSerializationApi
@@ -141,9 +153,9 @@ object ObjectIdSerializer : KSerializer<ObjectId> {
 object UUIDSerializer : KSerializer<UUID> {
     override val descriptor: SerialDescriptor = PrimitiveDescriptor("UUIDSerializer",PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, obj: UUID) {
+    override fun serialize(encoder: Encoder, value: UUID) {
         encoder as BsonEncoder
-        encoder.encodeUUID(obj, UuidRepresentation.STANDARD)
+        encoder.encodeUUID(value, UuidRepresentation.STANDARD)
     }
 
     override fun deserialize(decoder: Decoder): UUID {
@@ -151,7 +163,7 @@ object UUIDSerializer : KSerializer<UUID> {
             is FlexibleDecoder -> {
                 when (decoder.reader.currentBsonType) {
                     BsonType.STRING -> {
-                       UUID.fromString(decoder.decodeString())
+                        UUID.fromString(decoder.decodeString())
                     }
                     BsonType.BINARY -> {
                         decoder.reader.readBinaryData().asUuid(UuidRepresentation.STANDARD)
