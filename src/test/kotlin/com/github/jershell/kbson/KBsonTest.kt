@@ -13,10 +13,11 @@ import com.github.jershell.kbson.models.polymorph.SealedWrapper
 import com.github.jershell.kbson.models.polymorph.StringMessage
 import com.github.jershell.kbson.models.polymorph.TimestampedMessage
 import com.github.jershell.kbson.models.polymorph.Wrapper
-import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
+import kotlinx.serialization.modules.polymorphic
+import kotlinx.serialization.modules.subclass
 import org.bson.UuidRepresentation
 import org.bson.BsonArray
 import org.bson.BsonBinary
@@ -478,7 +479,7 @@ class KBsonTest {
 
         try {
             kBson.parse(SimpleNG.serializer(), docBadType)
-        } catch (e: MissingFieldException) {
+        } catch (e: SerializationException) {
             assertTrue(e.message == "Field 'short' is required, but it was missing")
         }
     }
@@ -904,7 +905,7 @@ class KBsonTest {
 
         try {
             kBson.load(SimpleNG.serializer(), docBadType)
-        } catch (e: MissingFieldException) {
+        } catch (e: SerializationException) {
             assertTrue(e.message == "Field 'short' is required, but it was missing")
         }
     }
@@ -925,10 +926,8 @@ class KBsonTest {
     @Test
     fun stringifyPolymorphism() {
         val pModule = SerializersModule {
-            polymorphic(Message::class) {
-                StringMessage::class with StringMessage.serializer()
-                IntMessage::class with IntMessage.serializer()
-            }
+            polymorphic(Message::class, StringMessage::class, StringMessage.serializer())
+            polymorphic(Message::class, IntMessage::class, IntMessage.serializer())
         }
         val conf = Configuration()
         val mDoc = BsonDocument().apply {
@@ -945,7 +944,7 @@ class KBsonTest {
             })
         }
 
-        val polyBson = KBson(context = DefaultModule + pModule)
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
         val res1 = polyBson.stringify(MessageWrapper.serializer(), MessageWrapper(m = StringMessage("FortyTwo")))
         val res2 = polyBson.stringify(MessageWrapper.serializer(), MessageWrapper(m = IntMessage(42)))
 
@@ -956,10 +955,8 @@ class KBsonTest {
     @Test
     fun parsePolymorphism() {
         val pModule = SerializersModule {
-            polymorphic(Message::class) {
-                StringMessage::class with StringMessage.serializer()
-                IntMessage::class with IntMessage.serializer()
-            }
+            polymorphic(Message::class, StringMessage::class, StringMessage.serializer())
+            polymorphic(Message::class, IntMessage::class, IntMessage.serializer())
         }
 
         val sDoc = BsonDocument().apply {
@@ -982,7 +979,7 @@ class KBsonTest {
             })
         }
 
-        val polyBson = KBson(context = DefaultModule + pModule)
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
         val res1 = polyBson.parse(MessageWrapper.serializer(), sDoc)
         val res2 = polyBson.parse(MessageWrapper.serializer(), nDoc)
 
@@ -993,10 +990,12 @@ class KBsonTest {
     @Test
     fun stringifyPolymorphismComplexHierarchies() {
         val pModule = SerializersModule {
-            polymorphic(Message::class, TimestampedMessage::class) {
-                FooTimestampedMessage::class with FooTimestampedMessage.serializer()
-                StringMessage::class with StringMessage.serializer()
-                IntMessage::class with IntMessage.serializer()
+            polymorphic(Message::class) {
+                polymorphic(TimestampedMessage::class) {
+                    subclass(FooTimestampedMessage::class, FooTimestampedMessage.serializer())
+                    subclass(StringMessage::class, StringMessage.serializer())
+                    subclass(IntMessage::class, IntMessage.serializer())
+                }
             }
         }
         val conf = Configuration()
@@ -1028,7 +1027,7 @@ class KBsonTest {
             })
         }
 
-        val polyBson = KBson(context = DefaultModule + pModule)
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
         val res1 = polyBson.stringify(
                 Wrapper.serializer(), Wrapper(
                 request = StringMessage("FortyTwo"),
@@ -1049,10 +1048,12 @@ class KBsonTest {
     @Test
     fun parsePolymorphismComplexHierarchies() {
         val pModule = SerializersModule {
-            polymorphic(Message::class, TimestampedMessage::class) {
-                FooTimestampedMessage::class with FooTimestampedMessage.serializer()
-                StringMessage::class with StringMessage.serializer()
-                IntMessage::class with IntMessage.serializer()
+            polymorphic(Message::class) {
+                polymorphic(TimestampedMessage::class) {
+                    subclass(FooTimestampedMessage::class, FooTimestampedMessage.serializer())
+                    subclass(StringMessage::class, StringMessage.serializer())
+                    subclass(IntMessage::class, IntMessage.serializer())
+                }
             }
         }
         val conf = Configuration()
@@ -1084,7 +1085,7 @@ class KBsonTest {
             })
         }
 
-        val polyBson = KBson(context = DefaultModule + pModule)
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
 
         val res1 = polyBson.parse(Wrapper.serializer(), mDoc)
         val res2 = polyBson.parse(Wrapper.serializer(), nDoc)
@@ -1106,11 +1107,12 @@ class KBsonTest {
 
     @Test
     fun stringifyPolymorphismSealed() {
+
         val pModule = SerializersModule {
-            polymorphic<SMessage> {
-                SMessage.Error::class with SMessage.Error.serializer()
-                SMessage.Loading::class with SMessage.Loading.serializer()
-                SMessage.Data::class with SMessage.Data.serializer()
+            polymorphic(SMessage::class) {
+                subclass(SMessage.Error.serializer())
+                subclass(SMessage.Loading.serializer())
+                subclass(SMessage.Data.serializer())
             }
         }
         val conf = Configuration()
@@ -1137,24 +1139,27 @@ class KBsonTest {
             })
         }
 
-        val polyBson = KBson(context = DefaultModule + pModule)
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
 
         val res1 = polyBson.stringify(
-                SealedWrapper.serializer(), SealedWrapper(
-                payload = SMessage.Error()
-        )
+                SealedWrapper.serializer(),
+                SealedWrapper(
+                        payload = SMessage.Error()
+                )
         )
 
         val res2 = polyBson.stringify(
-                SealedWrapper.serializer(), SealedWrapper(
-                payload = SMessage.Loading()
-        )
+                SealedWrapper.serializer(),
+                SealedWrapper(
+                        payload = SMessage.Loading()
+                )
         )
 
         val res3 = polyBson.stringify(
-                SealedWrapper.serializer(), SealedWrapper(
-                payload = SMessage.Data(someData = "something")
-        )
+                SealedWrapper.serializer(),
+                SealedWrapper(
+                    payload = SMessage.Data(someData = "something")
+                )
         )
 
         assertEquals(res1, doc1)
@@ -1165,10 +1170,10 @@ class KBsonTest {
     @Test
     fun parsePolymorphismSealed() {
         val pModule = SerializersModule {
-            polymorphic<SMessage> {
-                SMessage.Error::class with SMessage.Error.serializer()
-                SMessage.Loading::class with SMessage.Loading.serializer()
-                SMessage.Data::class with SMessage.Data.serializer()
+            polymorphic(SMessage::class) {
+                subclass(SMessage.Error::class, SMessage.Error.serializer())
+                subclass(SMessage.Loading::class, SMessage.Loading.serializer())
+                subclass(SMessage.Data::class, SMessage.Data.serializer())
             }
         }
         val conf = Configuration()
@@ -1196,7 +1201,7 @@ class KBsonTest {
             })
         }
 
-        val polyBson = KBson(context = DefaultModule + pModule)
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
 
         val res1 = polyBson.parse(SealedWrapper.serializer(), doc1)
 

@@ -1,12 +1,12 @@
 package com.github.jershell.kbson.models
 
-import kotlinx.serialization.ContextualSerialization
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
 @Serializable
 data class WithUUID (
-        @ContextualSerialization
+        @Contextual
         val uuid : UUID,
-        val map: Map<String,  @ContextualSerialization UUID>
+        val map: Map<String,  @Contextual UUID>
 )

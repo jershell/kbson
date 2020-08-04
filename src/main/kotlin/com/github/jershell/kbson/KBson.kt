@@ -1,36 +1,33 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.AbstractSerialFormat
-import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.decode
-import kotlinx.serialization.modules.SerialModule
+import kotlinx.serialization.*
+import kotlinx.serialization.modules.SerializersModule
 import org.bson.*
 import org.bson.codecs.*
-import java.nio.ByteBuffer
 
-class KBson(override val context: SerialModule = DefaultModule, private val configuration: Configuration = Configuration()) : AbstractSerialFormat(context) {
 
+
+class KBson(override val serializersModule: SerializersModule = DefaultModule, private val configuration: Configuration = Configuration()) : SerialFormat {
     fun <T> stringify(serializer: SerializationStrategy<T>, obj: T): BsonDocument {
         val doc = BsonDocument()
         val writer = BsonDocumentWriter(doc)
 
-        serializer.serialize(BsonEncoder(writer, context, configuration), obj)
+        serializer.serialize(BsonEncoder(writer, serializersModule, configuration), obj)
         writer.flush()
 
         return doc
     }
 
     fun <T> parse(deserializer: DeserializationStrategy<T>, doc: BsonDocument): T {
-        return BsonFlexibleDecoder((doc.asBsonReader() as AbstractBsonReader), context, configuration).decode(deserializer)
+        return BsonFlexibleDecoder((doc.asBsonReader() as AbstractBsonReader), serializersModule, configuration).decodeSerializableValue(deserializer)
     }
 
     fun <T> load(deserializer: DeserializationStrategy<T>, doc: ByteArray): T {
-        return BsonDecoder(BsonBinaryReader(ByteBuffer.wrap(doc)), context, configuration).decode(deserializer)
+        return BsonFlexibleDecoder((RawBsonDocument(doc).asBsonReader() as AbstractBsonReader), serializersModule, configuration).decodeSerializableValue(deserializer)
     }
 
     fun <T> load(deserializer: DeserializationStrategy<T>, doc: BsonDocument): T {
-        return BsonDecoder(doc.asBsonReader(), context, configuration).decode(deserializer)
+        return BsonFlexibleDecoder((doc.asBsonReader() as AbstractBsonReader), serializersModule, configuration).decodeSerializableValue(deserializer)
     }
 
     fun <T> dump(serializer: SerializationStrategy<T>, obj: T): ByteArray {

@@ -26,7 +26,10 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
+    // kotlin 1.3
     implementation("com.github.jershell:kbson:0.3.0")
+    // kotlin 1.4-rc
+    implementation("com.github.jershell:kbson:0.4.0-rc")
 }
 ```
 
@@ -35,7 +38,10 @@ or
 build.gradle
 ```groovy
 dependencies {
+    // kotlin 1.3
     implementation 'com.github.jershell:kbson:0.3.0'
+    // kotlin 1.4-rc
+    implementation 'com.github.jershell:kbson:0.4.0-rc'
 }
 ```
 
@@ -151,6 +157,8 @@ kbson after 0.1.5 use kotlinx.serialization 0.13.x
 kbson after 0.2.0 use kotlinx.serialization 0.14.x
 
 kbson after 0.2.2 use kotlinx.serialization 0.20.0 and kotlin 1.3.71
+
+kbson after 0.4.0 use kotlinx.serialization "1.0-M1-1.4.0-rc" and kotlin 1.4.0-rc
 
 
 # Contributing to kbson
