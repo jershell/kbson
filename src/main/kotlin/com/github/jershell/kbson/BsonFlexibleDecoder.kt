@@ -207,6 +207,7 @@ private class PolymorphismDecoder(
 ) : FlexibleDecoder(reader, context, configuration) {
     private var decodeCount = 0
 
+    @InternalSerializationApi
     override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
         if (deserializer !is PolymorphicSerializer<*>) {
             return deserializer.deserialize(this)

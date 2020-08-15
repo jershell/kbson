@@ -1,11 +1,11 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.4.0-rc"
+val LIBRARY_VERSION_NAME = "0.4.1-rc"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "1.0-M1-1.4.0-rc"
+val KOTLINX_SERIALIZATION_RUNTIME = "1.0.0-RC"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -16,7 +16,7 @@ val CONTACT_EMAIL = "jershell@mail.ru"
 
 buildscript {
     repositories { jcenter() }
-    val kotlin_version = "1.4.0-rc"
+    val kotlin_version = "1.4.0"
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
@@ -24,13 +24,12 @@ buildscript {
 }
 
 plugins {
-    // Apply the Kotlin JVM plugin to add support for Kotlin on the JVM.
-    id("org.jetbrains.kotlin.jvm").version("1.4.0-rc")
+    kotlin("jvm") version "1.4.0" // or kotlin("multiplatform") or any other kotlin plugin
+    kotlin("plugin.serialization") version "1.4.0"
     id("maven-publish")
     id("com.jfrog.bintray") version "1.8.4"
 }
 
-apply(plugin = "kotlinx-serialization")
 
 group = GROUP_ID
 version = LIBRARY_VERSION_NAME
@@ -141,7 +140,7 @@ repositories {
 dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:$KOTLINX_SERIALIZATION_RUNTIME")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$KOTLINX_SERIALIZATION_RUNTIME")
     implementation("org.mongodb:bson:4.1.0")
 
     // Use the Kotlin test library.
