@@ -8,8 +8,8 @@ import com.github.jershell.kbson.models.polymorph.IntMessage
 import com.github.jershell.kbson.models.polymorph.Message
 import com.github.jershell.kbson.models.polymorph.MessageWrapper
 import com.github.jershell.kbson.models.polymorph.StringMessage
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlin.math.PI

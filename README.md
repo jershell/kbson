@@ -28,8 +28,8 @@ build.gradle.kts
 dependencies {
     // kotlin 1.3
     implementation("com.github.jershell:kbson:0.3.0")
-    // kotlin 1.4.0 & kotlinx.serialization 1.0.0-RC
-    implementation("com.github.jershell:kbson:0.4.1-rc")
+    // kotlin 1.4.10 & kotlinx.serialization 1.0.0
+    implementation("com.github.jershell:kbson:0.4.1")
 }
 ```
 
@@ -40,8 +40,8 @@ build.gradle
 dependencies {
     // kotlin 1.3
     implementation 'com.github.jershell:kbson:0.3.0'
-    // kotlin 1.4.0 & kotlinx.serialization 1.0.0-RC
-    implementation 'com.github.jershell:kbson:0.4.1-rc'
+    // kotlin 1.4.0 & kotlinx.serialization 1.0.0
+    implementation 'com.github.jershell:kbson:0.4.1'
 }
 ```
 
