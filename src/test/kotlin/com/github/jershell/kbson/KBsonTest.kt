@@ -3,7 +3,31 @@
  */
 package com.github.jershell.kbson
 
-import com.github.jershell.kbson.models.*
+import com.github.jershell.kbson.models.Blob
+import com.github.jershell.kbson.models.ChildEntity
+import com.github.jershell.kbson.models.Complex
+import com.github.jershell.kbson.models.Custom
+import com.github.jershell.kbson.models.EnumFoo
+import com.github.jershell.kbson.models.Foo
+import com.github.jershell.kbson.models.KeyByEnum
+import com.github.jershell.kbson.models.Nested
+import com.github.jershell.kbson.models.NestedComplex
+import com.github.jershell.kbson.models.NestedMap
+import com.github.jershell.kbson.models.NullableClass
+import com.github.jershell.kbson.models.NullableCollection
+import com.github.jershell.kbson.models.NullableDefaultClass
+import com.github.jershell.kbson.models.NullableNotOptionalClass
+import com.github.jershell.kbson.models.OptionalClass
+import com.github.jershell.kbson.models.SEX
+import com.github.jershell.kbson.models.SexWithValue
+import com.github.jershell.kbson.models.Simple
+import com.github.jershell.kbson.models.SimpleNG
+import com.github.jershell.kbson.models.Value
+import com.github.jershell.kbson.models.WithPair
+import com.github.jershell.kbson.models.WithUUID
+import com.github.jershell.kbson.models.WrapperMapWithAdvancedKey
+import com.github.jershell.kbson.models.WrapperMapWithObjectId
+import com.github.jershell.kbson.models.WrapperSet
 import com.github.jershell.kbson.models.polymorph.FooTimestampedMessage
 import com.github.jershell.kbson.models.polymorph.IntMessage
 import com.github.jershell.kbson.models.polymorph.Message
@@ -18,7 +42,6 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import org.bson.UuidRepresentation
 import org.bson.BsonArray
 import org.bson.BsonBinary
 import org.bson.BsonBoolean
@@ -33,17 +56,18 @@ import org.bson.BsonNull
 import org.bson.BsonObjectId
 import org.bson.BsonString
 import org.bson.BsonSymbol
+import org.bson.UuidRepresentation
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
 import java.time.Instant
 import java.util.Arrays
 import java.util.Date
+import java.util.UUID
 import kotlin.math.PI
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import java.util.UUID
 
 
 class KBsonTest {
@@ -51,31 +75,31 @@ class KBsonTest {
 
     private val ts = 1562442284934L
     val img = this::class.java
-            .getResource("/image.png")
-            .readBytes()
+        .getResource("/image.png")
+        .readBytes()
 
     val txt = this::class.java.getResource("/lorem.txt").readBytes()
     val file = this::class.java.getResource("/MD5SUMS.zip").readBytes()
 
     // instance of data class
     val simpleModel = Simple(
-            "value_string",
-            PI,
-            0.1f,
-            42L,
-            '€',
-            true,
-            42
+        "value_string",
+        PI,
+        0.1f,
+        42L,
+        '€',
+        true,
+        42
     )
     val nestedModel = Nested(n = simpleModel, m = 42)
     val complexModel = Complex(
-            Date(ts),
-            Pair("FOO", "BAR"),
-            listOf("foo", "bar", "baz"),
-            Triple("foo", "bar", "baz"),
-            mapOf("key_1" to 42, "key_2" to 24, "key_3" to 444),
-            mapOf(true to "AAA", false to "BBB"),
-            mapOf(2.45 to 222f, 22.11 to 333f)
+        Date(ts),
+        Pair("FOO", "BAR"),
+        listOf("foo", "bar", "baz"),
+        Triple("foo", "bar", "baz"),
+        mapOf("key_1" to 42, "key_2" to 24, "key_3" to 444),
+        mapOf(true to "AAA", false to "BBB"),
+        mapOf(2.45 to 222f, 22.11 to 333f)
     )
 
     val blobModel = Blob(img, txt, file)
@@ -87,9 +111,9 @@ class KBsonTest {
     }
 
     val strictBlobModel = Blob(
-            img = img,
-            txt = txt,
-            zipFile = file
+        img = img,
+        txt = txt,
+        zipFile = file
     )
 
     val strictBlobDoc = BsonDocument().apply {
@@ -105,13 +129,13 @@ class KBsonTest {
             put("second", BsonString("BAR"))
         })
         put(
-                "list", BsonArray(
+            "list", BsonArray(
                 listOf(
-                        BsonString("foo"),
-                        BsonString("bar"),
-                        BsonString("baz")
+                    BsonString("foo"),
+                    BsonString("bar"),
+                    BsonString("baz")
                 )
-        )
+            )
         )
         put("triple", BsonDocument().apply {
             put("first", BsonString("foo"))
@@ -166,38 +190,38 @@ class KBsonTest {
 
 
     val nestedComplex = NestedComplex(
-            mapOf(
-                    10.toByte() to mapOf(
-                            '€' to SimpleNG(87, listOf('‡', '↪', '@', '$')),
-                            '$' to SimpleNG(88, listOf('!', '?', '~', '='))
-                    ),
-                    11.toByte() to mapOf(
-                            '€' to SimpleNG(89, listOf('‡', '↪', '@', '$')),
-                            '$' to SimpleNG(90, listOf('!', '?', '~', '='))
-                    )
+        mapOf(
+            10.toByte() to mapOf(
+                '€' to SimpleNG(87, listOf('‡', '↪', '@', '$')),
+                '$' to SimpleNG(88, listOf('!', '?', '~', '='))
             ),
-            listOf(
-                    mapOf(
-                            40 to listOf(31, 32, 33, 34, 35),
-                            41 to listOf(31, 32, 33, 34, 35)
-                    ),
-                    mapOf(
-                            40 to listOf(1, 3, 3, 4, 5),
-                            41 to listOf(31, 32, 33, 34, 35)
-                    ),
-                    mapOf(
-                            40 to listOf(0, 0, 1, 4, 5),
-                            41 to listOf(31, 32, 33, 34, 35)
-                    ),
-                    mapOf(
-                            40 to listOf(11, 31, 31, 41, 51),
-                            41 to listOf(31, 32, 33, 34, 35)
-                    ),
-                    mapOf(
-                            44 to listOf(1, 33, 33, 44, 55),
-                            41 to listOf(31, 32, 33, 34, 35)
-                    )
+            11.toByte() to mapOf(
+                '€' to SimpleNG(89, listOf('‡', '↪', '@', '$')),
+                '$' to SimpleNG(90, listOf('!', '?', '~', '='))
             )
+        ),
+        listOf(
+            mapOf(
+                40 to listOf(31, 32, 33, 34, 35),
+                41 to listOf(31, 32, 33, 34, 35)
+            ),
+            mapOf(
+                40 to listOf(1, 3, 3, 4, 5),
+                41 to listOf(31, 32, 33, 34, 35)
+            ),
+            mapOf(
+                40 to listOf(0, 0, 1, 4, 5),
+                41 to listOf(31, 32, 33, 34, 35)
+            ),
+            mapOf(
+                40 to listOf(11, 31, 31, 41, 51),
+                41 to listOf(31, 32, 33, 34, 35)
+            ),
+            mapOf(
+                44 to listOf(1, 33, 33, 44, 55),
+                41 to listOf(31, 32, 33, 34, 35)
+            )
+        )
     )
 
     val nestedComplexDoc = BsonDocument().apply {
@@ -225,59 +249,59 @@ class KBsonTest {
         })
 
         put("listOfMaps", BsonArray(
-                listOf(
-                        BsonDocument().apply {
-                            put(
-                                    "40",
-                                    BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
-                            )
-                            put(
-                                    "41",
-                                    BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
-                            )
-                        },
-                        BsonDocument().apply {
-                            put(
-                                    "40",
-                                    BsonArray(listOf(BsonInt32(1), BsonInt32(3), BsonInt32(3), BsonInt32(4), BsonInt32(5)))
-                            )
-                            put(
-                                    "41",
-                                    BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
-                            )
-                        },
-                        BsonDocument().apply {
-                            put(
-                                    "40",
-                                    BsonArray(listOf(BsonInt32(0), BsonInt32(0), BsonInt32(1), BsonInt32(4), BsonInt32(5)))
-                            )
-                            put(
-                                    "41",
-                                    BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
-                            )
-                        },
-                        BsonDocument().apply {
-                            put(
-                                    "40",
-                                    BsonArray(listOf(BsonInt32(11), BsonInt32(31), BsonInt32(31), BsonInt32(41), BsonInt32(51)))
-                            )
-                            put(
-                                    "41",
-                                    BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
-                            )
-                        },
-                        BsonDocument().apply {
-                            put(
-                                    "44",
-                                    BsonArray(listOf(BsonInt32(1), BsonInt32(33), BsonInt32(33), BsonInt32(44), BsonInt32(55)))
-                            )
-                            put(
-                                    "41",
-                                    BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
-                            )
-                        }
+            listOf(
+                BsonDocument().apply {
+                    put(
+                        "40",
+                        BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
+                    )
+                    put(
+                        "41",
+                        BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
+                    )
+                },
+                BsonDocument().apply {
+                    put(
+                        "40",
+                        BsonArray(listOf(BsonInt32(1), BsonInt32(3), BsonInt32(3), BsonInt32(4), BsonInt32(5)))
+                    )
+                    put(
+                        "41",
+                        BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
+                    )
+                },
+                BsonDocument().apply {
+                    put(
+                        "40",
+                        BsonArray(listOf(BsonInt32(0), BsonInt32(0), BsonInt32(1), BsonInt32(4), BsonInt32(5)))
+                    )
+                    put(
+                        "41",
+                        BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
+                    )
+                },
+                BsonDocument().apply {
+                    put(
+                        "40",
+                        BsonArray(listOf(BsonInt32(11), BsonInt32(31), BsonInt32(31), BsonInt32(41), BsonInt32(51)))
+                    )
+                    put(
+                        "41",
+                        BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
+                    )
+                },
+                BsonDocument().apply {
+                    put(
+                        "44",
+                        BsonArray(listOf(BsonInt32(1), BsonInt32(33), BsonInt32(33), BsonInt32(44), BsonInt32(55)))
+                    )
+                    put(
+                        "41",
+                        BsonArray(listOf(BsonInt32(31), BsonInt32(32), BsonInt32(33), BsonInt32(34), BsonInt32(35)))
+                    )
+                }
 
-                )))
+            )))
     }
 
     @Test
@@ -319,8 +343,8 @@ class KBsonTest {
     @Test
     fun nestedComplex() {
         val result: NestedComplex = kBson.parse(
-                NestedComplex.serializer(),
-                nestedComplexDoc
+            NestedComplex.serializer(),
+            nestedComplexDoc
         )
         assertEquals(nestedComplex, result)
     }
@@ -347,8 +371,8 @@ class KBsonTest {
             put("dec128", BsonDecimal128(Decimal128(BigDecimal("3.14"))))
         }
         assertEquals(
-                expectedCustomDoc,
-                actual
+            expectedCustomDoc,
+            actual
         )
     }
 
@@ -360,20 +384,20 @@ class KBsonTest {
             put("dec128", BsonDecimal128(Decimal128(BigDecimal("3.14"))))
         }
         assertEquals(
-                expectedCustomDoc,
-                actual
+            expectedCustomDoc,
+            actual
         )
     }
 
     @Test
     fun pairStringify() {
         val wp = WithPair(
-                Pair(null, "value"),
-                Triple(
-                        42,
-                        null,
-                        2L
-                )
+            Pair(null, "value"),
+            Triple(
+                42,
+                null,
+                2L
+            )
         )
         val expected = BsonDocument().apply {
             put("pair", BsonDocument().apply {
@@ -390,8 +414,8 @@ class KBsonTest {
         val actual = kBson.stringify(WithPair.serializer(), wp)
 
         assertEquals(
-                expected,
-                actual
+            expected,
+            actual
         )
     }
 
@@ -408,8 +432,8 @@ class KBsonTest {
         }
 
         assertEquals(
-                expected,
-                actual
+            expected,
+            actual
         )
     }
 
@@ -425,16 +449,16 @@ class KBsonTest {
         val actualCustom = kBson.parse(Custom.serializer(), customBsonDoc)
 
         assertEquals(
-                expectedCustom,
-                actualCustom
+            expectedCustom,
+            actualCustom
         )
     }
 
     @Test
     fun blobStringify() {
         assertEquals(
-                kBson.stringify(Blob.serializer(), blobModel),
-                blobDoc
+            kBson.stringify(Blob.serializer(), blobModel),
+            blobDoc
         )
     }
 
@@ -443,9 +467,9 @@ class KBsonTest {
         val expectedResult = blobModel
         val result = kBson.parse(Blob.serializer(), blobDoc)
         assertTrue(
-                Arrays.equals(expectedResult.img, result.img) &&
-                        Arrays.equals(expectedResult.txt, result.txt) &&
-                        Arrays.equals(expectedResult.zipFile, result.zipFile)
+            Arrays.equals(expectedResult.img, result.img) &&
+                    Arrays.equals(expectedResult.txt, result.txt) &&
+                    Arrays.equals(expectedResult.zipFile, result.zipFile)
         )
     }
 
@@ -456,8 +480,8 @@ class KBsonTest {
         }
         val result = kBson.parse(OptionalClass.serializer(), badDoc)
         assertTrue(
-                (result.reqString == "default_value1") &&
-                        (result.reqString3 == "reqString3")
+            (result.reqString == "default_value1") &&
+                    (result.reqString3 == "reqString3")
         )
     }
 
@@ -536,16 +560,16 @@ class KBsonTest {
         val result2 = kBson.stringify(NullableClass.serializer(), modelField)
 
         assert(
-                docNullableField.equals(result1) &&
-                        docField.equals(result2)
+            docNullableField.equals(result1) &&
+                    docField.equals(result2)
         )
     }
 
     @Test
     fun maps() {
         val foo = Foo(
-                key_A = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"),
-                key_B = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e")
+            key_A = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"),
+            key_B = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e")
         )
 
         val doc = BsonDocument().apply {
@@ -571,8 +595,8 @@ class KBsonTest {
     @Test
     fun enumStringify() {
         val model = EnumFoo(
-                sex = SEX.FEMALE,
-                sex2 = SexWithValue.TRANSGENDER
+            sex = SEX.FEMALE,
+            sex2 = SexWithValue.TRANSGENDER
         )
 
         val result = kBson.stringify(EnumFoo.serializer(), model)
@@ -586,8 +610,8 @@ class KBsonTest {
     @Test
     fun enumParse() {
         val model = EnumFoo(
-                sex = SEX.FEMALE,
-                sex2 = SexWithValue.TRANSGENDER
+            sex = SEX.FEMALE,
+            sex2 = SexWithValue.TRANSGENDER
         )
 
         val doc = BsonDocument().apply {
@@ -615,9 +639,9 @@ class KBsonTest {
     @Test
     fun mapValueParse() {
         val a = NestedMap(
-                "AAA", mapOf(
+            "AAA", mapOf(
                 "key" to Value("val1", listOf("val2", "val3"))
-        )
+            )
         )
 
         val b = BsonDocument().apply {
@@ -673,8 +697,8 @@ class KBsonTest {
         val actualCustom = kBson.load(Custom.serializer(), customBsonDoc)
 
         assertEquals(
-                expectedCustom,
-                actualCustom
+            expectedCustom,
+            actualCustom
         )
     }
 
@@ -683,9 +707,9 @@ class KBsonTest {
         val expectedResult = strictBlobModel
         val result = kBson.load(Blob.serializer(), strictBlobDoc.toByteArray())
         assertTrue(
-                Arrays.equals(expectedResult.img, result.img) &&
-                        Arrays.equals(expectedResult.txt, result.txt) &&
-                        Arrays.equals(expectedResult.zipFile, result.zipFile)
+            Arrays.equals(expectedResult.img, result.img) &&
+                    Arrays.equals(expectedResult.txt, result.txt) &&
+                    Arrays.equals(expectedResult.zipFile, result.zipFile)
         )
     }
 
@@ -696,8 +720,8 @@ class KBsonTest {
         }
         val result = kBson.load(OptionalClass.serializer(), badDoc)
         assertTrue(
-                (result.reqString == "default_value1") &&
-                        (result.reqString3 == "reqString3")
+            (result.reqString == "default_value1") &&
+                    (result.reqString3 == "reqString3")
         )
     }
 
@@ -725,8 +749,8 @@ class KBsonTest {
     @Test
     fun loadMaps() {
         val foo = Foo(
-                key_A = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"),
-                key_B = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e")
+            key_A = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e"),
+            key_B = mapOf("a" to "a", "b" to "b", "c" to "c", "d" to "d", "e" to "e")
         )
 
         val doc = BsonDocument().apply {
@@ -752,8 +776,8 @@ class KBsonTest {
     @Test
     fun loadEnum() {
         val model = EnumFoo(
-                sex = SEX.FEMALE,
-                sex2 = SexWithValue.TRANSGENDER
+            sex = SEX.FEMALE,
+            sex2 = SexWithValue.TRANSGENDER
         )
 
         val doc = BsonDocument().apply {
@@ -781,9 +805,9 @@ class KBsonTest {
     @Test
     fun loadMapValue() {
         val a = NestedMap(
-                "AAA", mapOf(
+            "AAA", mapOf(
                 "key" to Value("val1", listOf("val2", "val3"))
-        )
+            )
         )
 
         val b = BsonDocument().apply {
@@ -808,8 +832,8 @@ class KBsonTest {
             append("s", BsonString("s"))
         }
         assertEquals(
-                NullableNotOptionalClass("s", null),
-                kBson.parse(NullableNotOptionalClass.serializer(), bsonDocument)
+            NullableNotOptionalClass("s", null),
+            kBson.parse(NullableNotOptionalClass.serializer(), bsonDocument)
         )
     }
 
@@ -831,13 +855,13 @@ class KBsonTest {
         }
 
         val collection = NullableCollection(
-                null,
-                listOf("v1", null, null, "v4"),
-                mapOf(
-                        "k1" to null,
-                        "k2" to 42,
-                        "k3" to 44
-                )
+            null,
+            listOf("v1", null, null, "v4"),
+            mapOf(
+                "k1" to null,
+                "k2" to 42,
+                "k3" to 44
+            )
         )
 
         assertEquals(collection, kBson.parse(NullableCollection.serializer(), bsonDocument))
@@ -861,9 +885,9 @@ class KBsonTest {
         }
 
         val collection = NullableCollection(
-                null,
-                listOf("v1", null, null, "v4"),
-                mapOf("k1" to null, "k2" to 42, "k3" to 44)
+            null,
+            listOf("v1", null, null, "v4"),
+            mapOf("k1" to null, "k2" to 42, "k3" to 44)
         )
 
         assertEquals(collection, kBson.load(NullableCollection.serializer(), expected))
@@ -887,9 +911,9 @@ class KBsonTest {
         }.toByteArray()
 
         val collection = NullableCollection(
-                null,
-                listOf("v1", null, null, "v4"),
-                mapOf("k1" to null, "k2" to 42, "k3" to 44)
+            null,
+            listOf("v1", null, null, "v4"),
+            mapOf("k1" to null, "k2" to 42, "k3" to 44)
         )
 
         assertEquals(collection, kBson.load(NullableCollection.serializer(), expected))
@@ -962,8 +986,8 @@ class KBsonTest {
         val sDoc = BsonDocument().apply {
             append("m", BsonDocument().apply {
                 append(
-                        Configuration().classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.StringMessage")
+                    Configuration().classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.StringMessage")
                 )
                 append("msg", BsonString("FortyTwo"))
             })
@@ -972,8 +996,8 @@ class KBsonTest {
         val nDoc = BsonDocument().apply {
             append("m", BsonDocument().apply {
                 append(
-                        Configuration().classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.IntMessage")
+                    Configuration().classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.IntMessage")
                 )
                 append("number", BsonInt32(42))
             })
@@ -1006,8 +1030,8 @@ class KBsonTest {
             })
             append("response", BsonDocument().apply {
                 append(
-                        conf.classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
                 )
                 append("timestamp", BsonInt32(1570459730))
             })
@@ -1020,8 +1044,8 @@ class KBsonTest {
             })
             append("response", BsonDocument().apply {
                 append(
-                        conf.classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
                 )
                 append("timestamp", BsonInt32(1570459730))
             })
@@ -1029,16 +1053,16 @@ class KBsonTest {
 
         val polyBson = KBson(serializersModule = DefaultModule + pModule)
         val res1 = polyBson.stringify(
-                Wrapper.serializer(), Wrapper(
+            Wrapper.serializer(), Wrapper(
                 request = StringMessage("FortyTwo"),
                 response = FooTimestampedMessage(1570459730)
-        )
+            )
         )
         val res2 = polyBson.stringify(
-                Wrapper.serializer(), Wrapper(
+            Wrapper.serializer(), Wrapper(
                 request = IntMessage(42),
                 response = FooTimestampedMessage(1570459730)
-        )
+            )
         )
 
         assertEquals(res1, mDoc)
@@ -1064,8 +1088,8 @@ class KBsonTest {
             })
             append("response", BsonDocument().apply {
                 append(
-                        conf.classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
                 )
                 append("timestamp", BsonInt32(1570459730))
             })
@@ -1078,8 +1102,8 @@ class KBsonTest {
             })
             append("response", BsonDocument().apply {
                 append(
-                        conf.classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.FooTimestampedMessage")
                 )
                 append("timestamp", BsonInt32(1570459730))
             })
@@ -1091,17 +1115,17 @@ class KBsonTest {
         val res2 = polyBson.parse(Wrapper.serializer(), nDoc)
 
         assertEquals(
-                Wrapper(
-                        request = StringMessage("FortyTwo"),
-                        response = FooTimestampedMessage(1570459730)
-                ), res1
+            Wrapper(
+                request = StringMessage("FortyTwo"),
+                response = FooTimestampedMessage(1570459730)
+            ), res1
         )
 
         assertEquals(
-                Wrapper(
-                        request = IntMessage(42),
-                        response = FooTimestampedMessage(1570459730)
-                ), res2
+            Wrapper(
+                request = IntMessage(42),
+                response = FooTimestampedMessage(1570459730)
+            ), res2
         )
     }
 
@@ -1126,8 +1150,8 @@ class KBsonTest {
         val doc2 = BsonDocument().apply {
             append("payload", BsonDocument().apply {
                 append(
-                        conf.classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading")
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading")
                 )
             })
         }
@@ -1142,24 +1166,24 @@ class KBsonTest {
         val polyBson = KBson(serializersModule = DefaultModule + pModule)
 
         val res1 = polyBson.stringify(
-                SealedWrapper.serializer(),
-                SealedWrapper(
-                        payload = SMessage.Error()
-                )
+            SealedWrapper.serializer(),
+            SealedWrapper(
+                payload = SMessage.Error
+            )
         )
 
         val res2 = polyBson.stringify(
-                SealedWrapper.serializer(),
-                SealedWrapper(
-                        payload = SMessage.Loading()
-                )
+            SealedWrapper.serializer(),
+            SealedWrapper(
+                payload = SMessage.Loading
+            )
         )
 
         val res3 = polyBson.stringify(
-                SealedWrapper.serializer(),
-                SealedWrapper(
-                    payload = SMessage.Data(someData = "something")
-                )
+            SealedWrapper.serializer(),
+            SealedWrapper(
+                payload = SMessage.Data(someData = "something")
+            )
         )
 
         assertEquals(res1, doc1)
@@ -1174,6 +1198,8 @@ class KBsonTest {
                 subclass(SMessage.Error::class, SMessage.Error.serializer())
                 subclass(SMessage.Loading::class, SMessage.Loading.serializer())
                 subclass(SMessage.Data::class, SMessage.Data.serializer())
+                subclass(SMessage.DataWithId::class, SMessage.DataWithId.serializer())
+                subclass(SMessage.DataWithObjectId::class, SMessage.DataWithObjectId.serializer())
             }
         }
         val conf = Configuration()
@@ -1181,6 +1207,8 @@ class KBsonTest {
 
         val doc1 = BsonDocument().apply {
             append("payload", BsonDocument().apply {
+                //simulate an _id field first (loaded from mongo)
+                append("_id", BsonObjectId())
                 append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Error"))
             })
         }
@@ -1188,8 +1216,8 @@ class KBsonTest {
         val doc2 = BsonDocument().apply {
             append("payload", BsonDocument().apply {
                 append(
-                        conf.classDiscriminator,
-                        BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading")
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading")
                 )
             })
         }
@@ -1197,6 +1225,28 @@ class KBsonTest {
         val doc3 = BsonDocument().apply {
             append("payload", BsonDocument().apply {
                 append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Data"))
+                append("someData", BsonString("something"))
+            })
+        }
+
+        val doc4 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append("_id", BsonString("5d1777814e8c7b408a6ada73"))
+                append(
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.DataWithId")
+                )
+                append("someData", BsonString("something"))
+            })
+        }
+
+        val doc5 = BsonDocument().apply {
+            append("payload", BsonDocument().apply {
+                append("_id", BsonObjectId(ObjectId("5d1777814e8c7b408a6ada73")))
+                append(
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.DataWithObjectId")
+                )
                 append("someData", BsonString("something"))
             })
         }
@@ -1209,9 +1259,22 @@ class KBsonTest {
 
         val res3 = polyBson.parse(SealedWrapper.serializer(), doc3)
 
+        val res4 = polyBson.parse(SealedWrapper.serializer(), doc4)
+
+        val res5 = polyBson.parse(SealedWrapper.serializer(), doc5)
+
         assertTrue(res1.payload is SMessage.Error)
         assertTrue(res2.payload is SMessage.Loading)
-        assertTrue(res3.payload is SMessage.Data && res3.payload.someData == "something")
+        assertEquals(SealedWrapper(SMessage.Data(someData = "something")), res3)
+        assertEquals(SealedWrapper(SMessage.DataWithId(someData = "something", _id = "5d1777814e8c7b408a6ada73")), res4)
+        assertEquals(
+            SealedWrapper(
+                SMessage.DataWithObjectId(
+                    someData = "something",
+                    _id = ObjectId("5d1777814e8c7b408a6ada73")
+                )
+            ), res5
+        )
     }
 
     @Test
@@ -1240,8 +1303,8 @@ class KBsonTest {
         }
 
         val result = kBson.stringify(
-                WrapperSet.serializer(),
-                WrapperSet(setOf("one", "two", "three"))
+            WrapperSet.serializer(),
+            WrapperSet(setOf("one", "two", "three"))
         )
 
         assertEquals(doc, result)
@@ -1258,13 +1321,13 @@ class KBsonTest {
         }
 
         val result = kBson.stringify(
-                WrapperMapWithObjectId.serializer(), WrapperMapWithObjectId(
+            WrapperMapWithObjectId.serializer(), WrapperMapWithObjectId(
                 mapOf(
-                        ObjectId("5d1777814e8c7b408a6ada73") to "one",
-                        ObjectId("5d1777d04e8c7b408a6ada8a") to "two",
-                        ObjectId("5d17ab793b4083d41f829821") to "three"
+                    ObjectId("5d1777814e8c7b408a6ada73") to "one",
+                    ObjectId("5d1777d04e8c7b408a6ada8a") to "two",
+                    ObjectId("5d17ab793b4083d41f829821") to "three"
                 )
-        )
+            )
         )
 
         assertEquals(doc, result)
@@ -1283,13 +1346,13 @@ class KBsonTest {
         val result = kBson.parse(WrapperMapWithObjectId.serializer(), doc)
 
         assertEquals(
-                result, WrapperMapWithObjectId(
+            result, WrapperMapWithObjectId(
                 mapOf(
-                        ObjectId("5d1777814e8c7b408a6ada73") to "one",
-                        ObjectId("5d1777d04e8c7b408a6ada8a") to "two",
-                        ObjectId("5d17ab793b4083d41f829821") to "three"
+                    ObjectId("5d1777814e8c7b408a6ada73") to "one",
+                    ObjectId("5d1777d04e8c7b408a6ada8a") to "two",
+                    ObjectId("5d17ab793b4083d41f829821") to "three"
                 )
-        )
+            )
         )
     }
 
@@ -1299,11 +1362,11 @@ class KBsonTest {
         val datePoint = Date.from(Instant.parse("2040-12-12T10:21:12Z"))
 
         val result = kBson.stringify(
-                WrapperMapWithAdvancedKey.serializer(),
-                WrapperMapWithAdvancedKey(
-                        mapOf(datePoint to "point"),
-                        mapOf(BigDecimal("3.14159265") to "PI")
-                )
+            WrapperMapWithAdvancedKey.serializer(),
+            WrapperMapWithAdvancedKey(
+                mapOf(datePoint to "point"),
+                mapOf(BigDecimal("3.14159265") to "PI")
+            )
         )
 
         val doc = BsonDocument().apply {
@@ -1335,30 +1398,30 @@ class KBsonTest {
         val result = kBson.parse(WrapperMapWithAdvancedKey.serializer(), doc)
 
         assertEquals(
-                WrapperMapWithAdvancedKey(
-                        mapOf(datePoint to "point"),
-                        mapOf(BigDecimal("3.14159265") to "PI")
-                ), result
+            WrapperMapWithAdvancedKey(
+                mapOf(datePoint to "point"),
+                mapOf(BigDecimal("3.14159265") to "PI")
+            ), result
         )
     }
 
     @Test
     fun parseMaps() {
         val foo = Foo(
-                key_A = mapOf(
-                        "key_0" to "value_0",
-                        "key_1" to "value_1",
-                        "key_2" to "value_2",
-                        "key_3" to "value_3",
-                        "key_4" to "value_4"
-                ),
-                key_B = mapOf(
-                        "a" to "a2",
-                        "b" to "b2",
-                        "c" to "c2",
-                        "d" to "d2",
-                        "e" to "e2"
-                )
+            key_A = mapOf(
+                "key_0" to "value_0",
+                "key_1" to "value_1",
+                "key_2" to "value_2",
+                "key_3" to "value_3",
+                "key_4" to "value_4"
+            ),
+            key_B = mapOf(
+                "a" to "a2",
+                "b" to "b2",
+                "c" to "c2",
+                "d" to "d2",
+                "e" to "e2"
+            )
         )
 
         val doc = BsonDocument().apply {
@@ -1432,11 +1495,11 @@ class KBsonTest {
         }
 
         KeyByEnum(mapOf(SEX.FEMALE to 234, SEX.MALE to 231, SEX.TRANSGENDER to 235))
-                .let {
-                    kBson.stringify(KeyByEnum.serializer(), it)
-                }
-                .let {
-                    assertEquals(doc, it)
-                }
+            .let {
+                kBson.stringify(KeyByEnum.serializer(), it)
+            }
+            .let {
+                assertEquals(doc, it)
+            }
     }
 }

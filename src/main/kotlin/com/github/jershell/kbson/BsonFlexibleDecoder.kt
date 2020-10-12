@@ -1,6 +1,8 @@
 package com.github.jershell.kbson
 
-import kotlinx.serialization.*
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PolymorphicKind
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.StructureKind
@@ -11,12 +13,19 @@ import kotlinx.serialization.modules.SerializersModule
 import org.bson.AbstractBsonReader
 import org.bson.AbstractBsonReader.State
 import org.bson.BsonType
+import org.bson.types.ObjectId
 
 abstract class FlexibleDecoder(
     val reader: AbstractBsonReader,
     override val serializersModule: SerializersModule,
     val configuration: Configuration
 ) : AbstractDecoder() {
+
+    protected open var alreadyReadId: Any?
+        get() = null
+        set(_) {
+            //do nothing
+        }
 
     override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
         return when (descriptor.kind) {
@@ -25,7 +34,7 @@ abstract class FlexibleDecoder(
                 if (current == null || current == BsonType.DOCUMENT) {
                     reader.readStartDocument()
                 }
-                BsonFlexibleDecoder(reader, serializersModule, configuration)
+                BsonFlexibleDecoder(reader, serializersModule, configuration, alreadyReadId)
             }
             StructureKind.MAP -> {
                 reader.readStartDocument()
@@ -37,9 +46,9 @@ abstract class FlexibleDecoder(
             }
             is PolymorphicKind -> {
                 reader.readStartDocument()
-                PolymorphismDecoder(reader, serializersModule, configuration)
+                PolymorphismDecoder(reader, serializersModule, configuration, alreadyReadId)
             }
-            else -> super.beginStructure(descriptor)
+            else -> this
         }
     }
 
@@ -109,7 +118,8 @@ abstract class FlexibleDecoder(
 class BsonFlexibleDecoder(
     reader: AbstractBsonReader,
     context: SerializersModule,
-    configuration: Configuration
+    configuration: Configuration,
+    override var alreadyReadId: Any? = null
 ) : FlexibleDecoder(reader, context, configuration) {
 
     //to handle not optional nullable properties
@@ -164,6 +174,14 @@ class BsonFlexibleDecoder(
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
         initNotOptionalProperties(descriptor)
+        if (alreadyReadId != null) {
+            val idIndex = descriptor.getElementIndex("_id")
+            if (idIndex != UNKNOWN_NAME) {
+                return idIndex
+            } else {
+                alreadyReadId = null
+            }
+        }
 
         if (reader.state == State.TYPE) {
             reader.readBsonType()
@@ -198,37 +216,50 @@ class BsonFlexibleDecoder(
         }
         return null
     }
+
+    override fun decodeString(): String =
+        if (alreadyReadId != null) {
+            val result = alreadyReadId
+            alreadyReadId = null
+            result as? String ?: (result as ObjectId).toString()
+        } else {
+            super.decodeString()
+        }
 }
 
 private class PolymorphismDecoder(
     reader: AbstractBsonReader,
-    context: SerializersModule,
-    configuration: Configuration
+    val context: SerializersModule,
+    configuration: Configuration,
+    override var alreadyReadId: Any? = null
 ) : FlexibleDecoder(reader, context, configuration) {
     private var decodeCount = 0
 
     @InternalSerializationApi
-    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
-        if (deserializer !is PolymorphicSerializer<*>) {
-            return deserializer.deserialize(this)
-        }
-        reader.readName()
-        val type = reader.readString()
-
-        @Suppress("UNCHECKED_CAST")
-        val actualSerializer = deserializer.findPolymorphicSerializer(this, type) as KSerializer<T>
-        return BsonFlexibleDecoder(reader, serializersModule, configuration).decodeSerializableValue(actualSerializer)
-    }
-
-    override fun decodeSequentially(): Boolean {
-        return true
-    }
+    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T =
+        deserializer.deserialize(BsonFlexibleDecoder(reader, context, configuration, alreadyReadId))
 
     override fun decodeElementIndex(descriptor: SerialDescriptor): Int {
-        if (decodeCount < 2)
-            return decodeCount++
-
-        return CompositeDecoder.DECODE_DONE
+        return when (decodeCount) {
+            0 -> {
+                if (reader.state == State.TYPE) {
+                    reader.readBsonType()
+                }
+                val fieldName = reader.readName()
+                if (fieldName == "_id") {
+                    alreadyReadId = when (reader.currentBsonType) {
+                        BsonType.OBJECT_ID -> reader.readObjectId()
+                        BsonType.STRING -> reader.readString()
+                        else -> error("only ObjectId or string are supported as _id for polymorphism decoder ")
+                    }
+                }
+                decodeCount++
+            }
+            1 -> {
+                decodeCount++
+            }
+            else -> CompositeDecoder.DECODE_DONE
+        }
     }
 }
 
