@@ -1,11 +1,11 @@
 import java.util.Date
 
-val LIBRARY_VERSION_NAME = "0.4.2"
+val LIBRARY_VERSION_NAME = "0.4.3"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "1.0.0"
+val KOTLINX_SERIALIZATION_RUNTIME = "1.0.1"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -16,7 +16,7 @@ val CONTACT_EMAIL = "jershell@mail.ru"
 
 buildscript {
     repositories { jcenter() }
-    val kotlin_version = "1.4.0"
+    val kotlin_version = "1.4.20"
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
@@ -24,8 +24,8 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "1.4.10" // or kotlin("multiplatform") or any other kotlin plugin
-    kotlin("plugin.serialization") version "1.4.10"
+    kotlin("jvm") version "1.4.20" // or kotlin("multiplatform") or any other kotlin plugin
+    kotlin("plugin.serialization") version "1.4.20"
     id("maven-publish")
     id("com.jfrog.bintray") version "1.8.4"
 }

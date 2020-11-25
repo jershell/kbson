@@ -29,7 +29,7 @@ dependencies {
     // kotlin 1.3
     implementation("com.github.jershell:kbson:0.3.0")
     // kotlin 1.4.10 & kotlinx.serialization 1.0.0
-    implementation("com.github.jershell:kbson:0.4.2")
+    implementation("com.github.jershell:kbson:0.4.3")
 }
 ```
 
@@ -41,7 +41,7 @@ dependencies {
     // kotlin 1.3
     implementation 'com.github.jershell:kbson:0.3.0'
     // kotlin 1.4.0 & kotlinx.serialization 1.0.0
-    implementation 'com.github.jershell:kbson:0.4.2'
+    implementation 'com.github.jershell:kbson:0.4.3'
 }
 ```
 
@@ -162,6 +162,7 @@ kbson after 0.4.0 use kotlinx.serialization "1.0-M1-1.4.0-rc" and kotlin 1.4.0-r
 
 kbson after 0.4.1 use kotlinx.serialization "1.0.0" and kotlin 1.4.10
 
+kbson after 0.4.3 use kotlinx.serialization "1.0.0" and kotlin 1.4.20
 
 # Contributing to kbson
 Pull requests and bug reports are always welcome!
