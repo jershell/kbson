@@ -37,6 +37,7 @@ import com.github.jershell.kbson.models.polymorph.SealedWrapper
 import com.github.jershell.kbson.models.polymorph.StringMessage
 import com.github.jershell.kbson.models.polymorph.TimestampedMessage
 import com.github.jershell.kbson.models.polymorph.Wrapper
+import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.plus
@@ -1276,6 +1277,82 @@ class KBsonTest {
             ), res5
         )
     }
+
+    @Test
+    fun parseDirectPolymorphism() {
+        val pModule = SerializersModule {
+            polymorphic(SMessage::class) {
+                subclass(SMessage.Error::class)
+                subclass(SMessage.Loading::class)
+                subclass(SMessage.Data::class)
+                subclass(SMessage.DataWithId::class)
+                subclass(SMessage.DataWithObjectId::class)
+            }
+        }
+        val conf = Configuration()
+
+
+        val doc1 = BsonDocument().apply {
+                //simulate an _id field first (loaded from mongo)
+                append("_id", BsonObjectId())
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Error"))
+        }
+
+        val doc2 = BsonDocument().apply {
+                append(
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Loading")
+                )
+        }
+
+        val doc3 = BsonDocument().apply {
+                append(conf.classDiscriminator, BsonString("com.github.jershell.kbson.models.polymorph.SMessage.Data"))
+                append("someData", BsonString("something"))
+        }
+
+        val doc4 = BsonDocument().apply {
+                append("_id", BsonString("5d1777814e8c7b408a6ada73"))
+                append(
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.DataWithId")
+                )
+                append("someData", BsonString("something"))
+        }
+
+        val doc5 = BsonDocument().apply {
+                append("_id", BsonObjectId(ObjectId("5d1777814e8c7b408a6ada73")))
+                append(
+                    conf.classDiscriminator,
+                    BsonString("com.github.jershell.kbson.models.polymorph.SMessage.DataWithObjectId")
+                )
+                append("someData", BsonString("something"))
+        }
+
+        val polyBson = KBson(serializersModule = DefaultModule + pModule)
+
+        val res1 = polyBson.parse(PolymorphicSerializer(SMessage::class), doc1)
+
+        val res2 = polyBson.parse(PolymorphicSerializer(SMessage::class), doc2)
+
+        val res3 = polyBson.parse(PolymorphicSerializer(SMessage::class), doc3)
+
+        val res4 = polyBson.parse(PolymorphicSerializer(SMessage::class), doc4)
+
+        val res5 = polyBson.parse(PolymorphicSerializer(SMessage::class), doc5)
+
+        assertTrue(res1 is SMessage.Error)
+        assertTrue(res2 is SMessage.Loading)
+        assertEquals(SMessage.Data(someData = "something"), res3)
+        assertEquals(SMessage.DataWithId(someData = "something", _id = "5d1777814e8c7b408a6ada73"), res4)
+        assertEquals(
+                SMessage.DataWithObjectId(
+                    someData = "something",
+                    _id = ObjectId("5d1777814e8c7b408a6ada73")
+                ),
+            res5
+        )
+    }
+
 
     @Test
     fun parseSimpleSetOfStrings() {
