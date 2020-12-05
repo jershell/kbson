@@ -21,7 +21,12 @@ abstract class FlexibleDecoder(
     val configuration: Configuration
 ) : AbstractDecoder() {
 
-    protected open var alreadyReadId: Any?
+    /**
+     * _id field comes always first in MongoDb.
+     * Sometimes you may need to check if this id is not already read by the [reader]
+     * - and then you may need to set the [alreadyReadId] to null in order to specify that is has been taken into account.
+     */
+    open var alreadyReadId: Any?
         get() = null
         set(_) {
             //do nothing
