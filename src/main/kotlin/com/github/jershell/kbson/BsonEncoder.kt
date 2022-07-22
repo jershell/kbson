@@ -2,9 +2,7 @@ package com.github.jershell.kbson
 
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
-import kotlinx.serialization.descriptors.PolymorphicKind
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractEncoder
 import kotlinx.serialization.encoding.CompositeEncoder
 import kotlinx.serialization.modules.SerializersModule
@@ -65,6 +63,19 @@ open class BsonEncoder(
         when (descriptor.kind) {
             is StructureKind.LIST -> writer.writeEndArray()
             is StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> writer.writeEndDocument()
+/*            SerialKind.ENUM -> TODO()
+            SerialKind.CONTEXTUAL -> TODO()
+            PrimitiveKind.BOOLEAN -> TODO()
+            PrimitiveKind.BYTE -> TODO()
+            PrimitiveKind.CHAR -> TODO()
+            PrimitiveKind.SHORT -> TODO()
+            PrimitiveKind.INT -> TODO()
+            PrimitiveKind.LONG -> TODO()
+            PrimitiveKind.FLOAT -> TODO()
+            PrimitiveKind.DOUBLE -> TODO()
+            PrimitiveKind.STRING -> TODO()
+            PolymorphicKind.SEALED -> TODO()
+            PolymorphicKind.OPEN -> TODO()*/
         }
     }
 
@@ -109,6 +120,22 @@ open class BsonEncoder(
             is StructureKind.MAP -> {
                 state = stateMap.next()
             }
+
+/*            SerialKind.ENUM -> TODO()
+            SerialKind.CONTEXTUAL -> TODO()
+            PrimitiveKind.BOOLEAN -> TODO()
+            PrimitiveKind.BYTE -> TODO()
+            PrimitiveKind.CHAR -> TODO()
+            PrimitiveKind.SHORT -> TODO()
+            PrimitiveKind.INT -> TODO()
+            PrimitiveKind.LONG -> TODO()
+            PrimitiveKind.FLOAT -> TODO()
+            PrimitiveKind.DOUBLE -> TODO()
+            PrimitiveKind.STRING -> TODO()
+            StructureKind.LIST -> TODO()
+            StructureKind.OBJECT -> TODO()
+            PolymorphicKind.SEALED -> TODO()
+            PolymorphicKind.OPEN -> TODO()*/
         }
         return true
     }

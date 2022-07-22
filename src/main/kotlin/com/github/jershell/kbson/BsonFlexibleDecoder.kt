@@ -3,9 +3,7 @@ package com.github.jershell.kbson
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.descriptors.PolymorphicKind
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.AbstractDecoder
 import kotlinx.serialization.encoding.CompositeDecoder
 import kotlinx.serialization.encoding.CompositeDecoder.Companion.UNKNOWN_NAME
@@ -61,6 +59,19 @@ abstract class FlexibleDecoder(
         when (descriptor.kind) {
             is StructureKind.LIST -> reader.readEndArray()
             is StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> reader.readEndDocument()
+/*            SerialKind.ENUM -> TODO()
+            SerialKind.CONTEXTUAL -> TODO()
+            PrimitiveKind.BOOLEAN -> TODO()
+            PrimitiveKind.BYTE -> TODO()
+            PrimitiveKind.CHAR -> TODO()
+            PrimitiveKind.SHORT -> TODO()
+            PrimitiveKind.INT -> TODO()
+            PrimitiveKind.LONG -> TODO()
+            PrimitiveKind.FLOAT -> TODO()
+            PrimitiveKind.DOUBLE -> TODO()
+            PrimitiveKind.STRING -> TODO()
+            PolymorphicKind.SEALED -> TODO()
+            PolymorphicKind.OPEN -> TODO()*/
         }
     }
 

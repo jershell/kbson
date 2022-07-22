@@ -1,11 +1,9 @@
-import java.util.Date
-
-val LIBRARY_VERSION_NAME = "0.4.4"
+val LIBRARY_VERSION_NAME = "0.4.5"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "1.0.1"
+val KOTLINX_SERIALIZATION_RUNTIME = "1.3.3"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -14,28 +12,34 @@ val WEBSITE_URL = "https://github.com/jershell/kbson"
 val ISSUE_TRACKER_URL = "https://github.com/jershell/kbson/issues"
 val CONTACT_EMAIL = "jershell@mail.ru"
 
-buildscript {
-    repositories { jcenter() }
-    val kotlin_version = "1.4.20"
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
-        classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlin_version")
-    }
+repositories {
+    mavenCentral()
 }
 
 plugins {
-    kotlin("jvm") version "1.4.20" // or kotlin("multiplatform") or any other kotlin plugin
-    kotlin("plugin.serialization") version "1.4.20"
+    kotlin("jvm") version "1.6.21" // or kotlin("multiplatform") or any other kotlin plugin
+    kotlin("plugin.serialization") version "1.6.21"
     id("maven-publish")
-    id("com.jfrog.bintray") version "1.8.4"
 }
 
 
 group = GROUP_ID
 version = LIBRARY_VERSION_NAME
 
-tasks.bintrayUpload {
-    dependsOn("publishToMavenLocal")
+
+
+dependencies {
+    // Use the Kotlin JDK 8 standard library.
+    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$KOTLINX_SERIALIZATION_RUNTIME")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$KOTLINX_SERIALIZATION_RUNTIME")
+    implementation("org.mongodb:bson:4.6.0")
+
+    // Use the Kotlin test library.
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+
+    // Use the Kotlin JUnit integration.
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
 }
 
 tasks.register<Jar>("sourcesAll") {
@@ -105,48 +109,4 @@ publishing {
     }
 }
 
-bintray {
-    user = if(project.hasProperty("user_name")) project.property("user_name").toString() else ""
-    key = if(project.hasProperty("apikey")) project.property("apikey").toString() else ""
-    publish = true
-    override = false
-    setPublications("mavenJava")
-    pkg.apply {
-        repo = BINTRAY_REPOSITORY
-        name = ARTIFACT_ID
-        userOrg = BINTRAY_ORGINIZATION
-        desc = SHORT_DESC
-        setLicenses("MIT")
-        version.apply {
-            name = LIBRARY_VERSION_NAME
-            vcsTag = LIBRARY_VERSION_NAME
-            released = Date().toString()
-        }
 
-        vcsUrl = VCS_URL
-        websiteUrl = WEBSITE_URL
-        issueTrackerUrl = ISSUE_TRACKER_URL
-
-        setLabels("kotlin", "bson", "serialization", "jvm", "mongo", "mongodb", "kmongo")
-    }
-}
-
-repositories {
-    // Use jcenter for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-}
-
-dependencies {
-    // Use the Kotlin JDK 8 standard library.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$KOTLINX_SERIALIZATION_RUNTIME")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$KOTLINX_SERIALIZATION_RUNTIME")
-    implementation("org.mongodb:bson:4.1.0")
-
-    // Use the Kotlin test library.
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-
-    // Use the Kotlin JUnit integration.
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
-}

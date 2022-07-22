@@ -505,7 +505,8 @@ class KBsonTest {
         try {
             kBson.parse(SimpleNG.serializer(), docBadType)
         } catch (e: SerializationException) {
-            assertTrue(e.message == "Field 'short' is required, but it was missing")
+            val message = e.message ?: ""
+            assertTrue(message.contains("short") && message.contains("list"))
         }
     }
 
@@ -931,7 +932,8 @@ class KBsonTest {
         try {
             kBson.load(SimpleNG.serializer(), docBadType)
         } catch (e: SerializationException) {
-            assertTrue(e.message == "Field 'short' is required, but it was missing")
+            val message = e.message ?: ""
+            assertTrue(message.contains("short") && message.contains("list"))
         }
     }
 
