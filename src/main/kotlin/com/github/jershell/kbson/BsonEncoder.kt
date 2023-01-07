@@ -1,5 +1,6 @@
 package com.github.jershell.kbson
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.descriptors.*
@@ -47,7 +48,7 @@ open class BsonEncoder(
             }
             is PolymorphicKind -> {
                 writer.writeStartDocument()
-                writer.writeName(configuration.classDiscriminator)
+                writer.writeName(descriptor.classDiscriminator())
                 hasBegin = true
             }
             StructureKind.MAP -> {
@@ -57,6 +58,15 @@ open class BsonEncoder(
             else -> throw SerializationException("Primitives are not supported at top-level")
         }
         return super.beginStructure(descriptor)
+    }
+
+    private fun SerialDescriptor.classDiscriminator(): String {
+        for (annotation in this.annotations) {
+            if (annotation is BsonClassDiscriminator) {
+                return annotation.discriminator
+            }
+        }
+        return configuration.classDiscriminator
     }
 
     override fun endStructure(descriptor: SerialDescriptor) {
