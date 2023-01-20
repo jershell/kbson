@@ -28,10 +28,13 @@ import com.github.jershell.kbson.models.WithUUID
 import com.github.jershell.kbson.models.WrapperMapWithAdvancedKey
 import com.github.jershell.kbson.models.WrapperMapWithObjectId
 import com.github.jershell.kbson.models.WrapperSet
+import com.github.jershell.kbson.models.polymorph.AddressNote
 import com.github.jershell.kbson.models.polymorph.FooTimestampedMessage
 import com.github.jershell.kbson.models.polymorph.IntMessage
 import com.github.jershell.kbson.models.polymorph.Message
 import com.github.jershell.kbson.models.polymorph.MessageWrapper
+import com.github.jershell.kbson.models.polymorph.Note
+import com.github.jershell.kbson.models.polymorph.PhoneNote
 import com.github.jershell.kbson.models.polymorph.SMessage
 import com.github.jershell.kbson.models.polymorph.SealedWrapper
 import com.github.jershell.kbson.models.polymorph.StringMessage
@@ -1130,6 +1133,52 @@ class KBsonTest {
                 response = FooTimestampedMessage(1570459730)
             ), res2
         )
+    }
+
+    @Test
+    fun parseAnnotatedPolymorphism() {
+        val addressNoteDocument = BsonDocument().apply {
+            append("contentType", BsonString("ADDRESS"))
+            append("street", BsonString("street 1"))
+        }
+
+        val expectedAddressNote = AddressNote("street 1")
+        val actualAddressNote = KBson.default.parse(Note.serializer(), addressNoteDocument)
+
+        assertEquals(expectedAddressNote, actualAddressNote)
+
+        val phoneNoteDocument = BsonDocument().apply {
+            append("contentType", BsonString("PHONE"))
+            append("phoneNumber", BsonString("00123456789"))
+        }
+
+        val expectedPhoneNote = PhoneNote("00123456789")
+        val actualPhoneNote = KBson.default.parse(Note.serializer(), phoneNoteDocument)
+
+        assertEquals(expectedPhoneNote, actualPhoneNote)
+    }
+
+    @Test
+    fun encodeAnnotatedPolymorphism() {
+        val addressNote = AddressNote("street 1")
+        val expectedAddressNoteDocument = BsonDocument().apply {
+            append("contentType", BsonString("ADDRESS"))
+            append("street", BsonString("street 1"))
+        }
+
+        val actualAddressNoteDocument = KBson.default.stringify(Note.serializer(), addressNote)
+
+        assertEquals(expectedAddressNoteDocument, actualAddressNoteDocument)
+
+        val phoneNote = PhoneNote("00123456789")
+        val expectedPhoneNoteDocument = BsonDocument().apply {
+            append("contentType", BsonString("PHONE"))
+            append("phoneNumber", BsonString("00123456789"))
+        }
+
+        val actualPhoneNoteDocument = KBson.default.stringify(Note.serializer(), phoneNote)
+
+        assertEquals(expectedPhoneNoteDocument, actualPhoneNoteDocument)
     }
 
     @Test
