@@ -72,19 +72,20 @@ open class BsonEncoder(
         when (descriptor.kind) {
             is StructureKind.LIST -> writer.writeEndArray()
             is StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> writer.writeEndDocument()
-/*            SerialKind.ENUM -> TODO()
-            SerialKind.CONTEXTUAL -> TODO()
+            else -> {}
+/*            PolymorphicKind.OPEN -> TODO()
+            PolymorphicKind.SEALED -> TODO()
             PrimitiveKind.BOOLEAN -> TODO()
             PrimitiveKind.BYTE -> TODO()
             PrimitiveKind.CHAR -> TODO()
-            PrimitiveKind.SHORT -> TODO()
+            PrimitiveKind.DOUBLE -> TODO()
+            PrimitiveKind.FLOAT -> TODO()
             PrimitiveKind.INT -> TODO()
             PrimitiveKind.LONG -> TODO()
-            PrimitiveKind.FLOAT -> TODO()
-            PrimitiveKind.DOUBLE -> TODO()
+            PrimitiveKind.SHORT -> TODO()
             PrimitiveKind.STRING -> TODO()
-            PolymorphicKind.SEALED -> TODO()
-            PolymorphicKind.OPEN -> TODO()*/
+            SerialKind.CONTEXTUAL -> TODO()
+            SerialKind.ENUM -> TODO()*/
         }
     }
 
@@ -129,6 +130,7 @@ open class BsonEncoder(
             is StructureKind.MAP -> {
                 state = stateMap.next()
             }
+            else -> {}
 
 /*            SerialKind.ENUM -> TODO()
             SerialKind.CONTEXTUAL -> TODO()
@@ -144,7 +146,8 @@ open class BsonEncoder(
             StructureKind.LIST -> TODO()
             StructureKind.OBJECT -> TODO()
             PolymorphicKind.SEALED -> TODO()
-            PolymorphicKind.OPEN -> TODO()*/
+            PolymorphicKind.OPEN -> TODO()
+                                     */
         }
         return true
     }

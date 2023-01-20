@@ -9,12 +9,12 @@ buildscript {
     }
 }
 
-val LIBRARY_VERSION_NAME = "0.4.6"
+val LIBRARY_VERSION_NAME = "0.5.0"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "1.4.0"
+val KOTLINX_SERIALIZATION_RUNTIME = "1.4.1"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -36,8 +36,8 @@ repositories {
 }
 
 plugins {
-    kotlin("jvm") version "1.6.21" // or kotlin("multiplatform") or any other kotlin plugin
-    kotlin("plugin.serialization") version "1.6.21"
+    kotlin("jvm") version "1.7.20" // or kotlin("multiplatform") or any other kotlin plugin
+    kotlin("plugin.serialization") version "1.7.20"
     id("maven-publish")
     signing
     id("io.codearte.nexus-staging") version "0.30.0"
@@ -53,10 +53,10 @@ version = LIBRARY_VERSION_NAME
 
 dependencies {
     // Use the Kotlin JDK 8 standard library.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$KOTLINX_SERIALIZATION_RUNTIME")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$KOTLINX_SERIALIZATION_RUNTIME")
-    implementation("org.mongodb:bson:4.6.0")
+    implementation("org.mongodb:bson:4.8.2")
 
     // Use the Kotlin test library.
     testImplementation("org.jetbrains.kotlin:kotlin-test")

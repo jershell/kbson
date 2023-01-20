@@ -59,6 +59,7 @@ abstract class FlexibleDecoder(
         when (descriptor.kind) {
             is StructureKind.LIST -> reader.readEndArray()
             is StructureKind.MAP, StructureKind.CLASS, StructureKind.OBJECT -> reader.readEndDocument()
+            else -> {}
 /*            SerialKind.ENUM -> TODO()
             SerialKind.CONTEXTUAL -> TODO()
             PrimitiveKind.BOOLEAN -> TODO()
