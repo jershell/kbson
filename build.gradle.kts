@@ -1,9 +1,20 @@
+import java.util.Properties
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.30.0")
+    }
+}
+
 val LIBRARY_VERSION_NAME = "0.4.6"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "1.3.3"
+val KOTLINX_SERIALIZATION_RUNTIME = "1.4.0"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -11,6 +22,14 @@ val VCS_URL = "https://github.com/jershell/kbson.git"
 val WEBSITE_URL = "https://github.com/jershell/kbson"
 val ISSUE_TRACKER_URL = "https://github.com/jershell/kbson/issues"
 val CONTACT_EMAIL = "jershell@mail.ru"
+
+val properties = Properties().apply {
+    rootProject.file("local.properties").let { file ->
+        if (file.canRead()) {
+            load(file.reader())
+        }
+    }
+}
 
 repositories {
     mavenCentral()
@@ -20,7 +39,11 @@ plugins {
     kotlin("jvm") version "1.6.21" // or kotlin("multiplatform") or any other kotlin plugin
     kotlin("plugin.serialization") version "1.6.21"
     id("maven-publish")
+    signing
+    id("io.codearte.nexus-staging") version "0.30.0"
 }
+
+//apply(from = "io.codearte.nexus-staging")
 
 
 group = GROUP_ID
@@ -76,8 +99,21 @@ fun printResults(desc: TestDescriptor, result: TestResult) {
         println(seperationLine)
     }
 }
-
+// publishing
 publishing {
+    repositories {
+
+        val releasesUrl = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
+        val snapshotsUrl = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+        maven {
+            name = "sonatypeSnapshotRepository"
+            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsUrl else releasesUrl
+            credentials {
+                username = properties["mavencentral.username"] as String? ?: System.getenv("MVN_USERNAME")
+                password = properties["mavencentral.password"] as String? ?: System.getenv("MVN_PASSWORD")
+            }
+        }
+    }
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
@@ -109,4 +145,14 @@ publishing {
     }
 }
 
+signing {
+    useGpgCmd()
+    sign(publishing.publications["mavenJava"])
+    // sign(publishing.publications)
+}
 
+nexusStaging {
+    serverUrl = "https://oss.sonatype.org/service/local/"
+    username = properties["mavencentral.username"] as String? ?: System.getenv("MVN_USERNAME")
+    password = properties["mavencentral.password"] as String? ?: System.getenv("MVN_PASSWORD")
+}
