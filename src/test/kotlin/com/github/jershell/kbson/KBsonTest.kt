@@ -9,6 +9,7 @@ import com.github.jershell.kbson.models.Complex
 import com.github.jershell.kbson.models.Custom
 import com.github.jershell.kbson.models.EnumFoo
 import com.github.jershell.kbson.models.Foo
+import com.github.jershell.kbson.models.JsonMapAny
 import com.github.jershell.kbson.models.KeyByEnum
 import com.github.jershell.kbson.models.Nested
 import com.github.jershell.kbson.models.NestedComplex
@@ -60,11 +61,13 @@ import org.bson.BsonNull
 import org.bson.BsonObjectId
 import org.bson.BsonString
 import org.bson.BsonSymbol
+import org.bson.BsonValue
 import org.bson.UuidRepresentation
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.ZonedDateTime
 import java.util.Arrays
 import java.util.Date
 import java.util.UUID
@@ -1629,5 +1632,102 @@ class KBsonTest {
             .let {
                 assertEquals(doc, it)
             }
+    }
+
+    @Test
+    fun stringifyMapAny() {
+        val dateTime = ZonedDateTime.parse("2040-12-12T10:21:12Z")
+        val date = "2040-12-12T10:21:12Z"
+        val jsonWrapperModel = JsonMapAny(
+            title = "test",
+            payload = mapOf(
+                "foo" to "bar",
+                "one" to 1,
+                "twoDotZero" to 2.0,
+                "boolean" to true,
+                "none" to null,
+                "object" to mapOf(
+                    "number" to 5,
+                    "text" to "Cinque",
+                    "dateTime" to dateTime,
+                    "bigDecimal" to BigDecimal.valueOf(15000.34),
+                    ),
+                "list" to listOf(5, 6, 7),
+            ))
+
+        val doc = BsonDocument().apply {
+            put("title", BsonString("test"))
+            put("payload", BsonDocument().apply {
+                put("foo", BsonString("bar"))
+                put("one", BsonInt32(1))
+                put("twoDotZero", BsonDouble(2.0))
+                put("boolean", BsonBoolean(true))
+                put("none", BsonNull())
+                put("object", BsonDocument().apply {
+                    put("number", BsonInt32(5))
+                    put("text", BsonString("Cinque"))
+                    put("dateTime", BsonString(date))
+                    put("bigDecimal", BsonDouble(BigDecimal.valueOf(15000.34).toDouble()))
+                })
+                put("list", BsonArray(
+                    listOf(
+                        BsonInt32(5),
+                        BsonInt32(6),
+                        BsonInt32(7)
+                    ))
+                )
+            })
+        }
+
+        val actual = kBson.stringify(JsonMapAny.serializer(), jsonWrapperModel)
+        assertEquals(doc, actual)
+    }
+
+    @Test
+    fun parseMapAny() {
+        val dateTime = Instant.parse("2040-12-12T10:21:12Z")
+        val jsonWrapperModel = JsonMapAny(
+            title = "test",
+            payload = mapOf(
+                "foo" to "bar",
+                "one" to 1,
+                "twoDotZero" to 2.0,
+                "boolean" to true,
+                "none" to null,
+                "object" to mapOf(
+                    "number" to 5,
+                    "text" to "Cinque",
+                    "dateTime" to dateTime,
+                    "bigDecimal" to BigDecimal.valueOf(15000.123456789),
+                ),
+                "list" to listOf(5, 6, 7),
+            ))
+
+        val doc = BsonDocument().apply {
+            put("title", BsonString("test"))
+            put("payload", BsonDocument().apply {
+                put("foo", BsonString("bar"))
+                put("one", BsonInt32(1))
+                put("twoDotZero", BsonDouble(2.0))
+                put("boolean", BsonBoolean(true))
+                put("none", BsonNull())
+                put("object", BsonDocument().apply {
+                    put("number", BsonInt32(5))
+                    put("text", BsonString("Cinque"))
+                    put("dateTime", BsonDateTime(dateTime.toEpochMilli()))
+                    put("bigDecimal", BsonDecimal128(Decimal128(BigDecimal.valueOf(15000.3456789))))
+                })
+                put("list", BsonArray(
+                    listOf(
+                        BsonInt32(5),
+                        BsonInt32(6),
+                        BsonInt32(7)
+                    ))
+                )
+            })
+        }
+
+        val actual = kBson.parse(JsonMapAny.serializer(), doc)
+        assertEquals(jsonWrapperModel.title, actual.title)
     }
 }

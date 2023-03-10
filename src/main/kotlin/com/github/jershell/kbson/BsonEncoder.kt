@@ -9,6 +9,7 @@ import kotlinx.serialization.modules.SerializersModule
 import org.bson.BsonBinary
 import org.bson.BsonWriter
 import org.bson.UuidRepresentation
+import org.bson.json.JsonReader
 import org.bson.types.Decimal128
 import org.bson.types.ObjectId
 import java.util.UUID
@@ -262,6 +263,13 @@ open class BsonEncoder(
             STATE.VALUE -> writer.writeBinaryData(BsonBinary(value, uuidRepresentation))
             // I think we can use base64, but files can be big
             STATE.NAME -> throw SerializationException("UUID is not supported as a key of map")
+        }
+    }
+
+    fun encodeJson(value: String) {
+        when (state) {
+            STATE.VALUE -> writer.pipe(JsonReader(value))
+            STATE.NAME -> throw SerializationException("Json is not supported as a key of map")
         }
     }
 
