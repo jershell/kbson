@@ -9,12 +9,12 @@ buildscript {
     }
 }
 
-val LIBRARY_VERSION_NAME = "0.6.0"
+val LIBRARY_VERSION_NAME = "0.7.0"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
 val BINTRAY_ORGINIZATION = "jershell"
-val KOTLINX_SERIALIZATION_RUNTIME = "1.4.1"
+val KOTLINX_SERIALIZATION_RUNTIME = "1.6.3"
 val SHORT_DESC = """
     This adapter adds BSON support to kotlinx.serialization.
 """.trimIndent()
@@ -36,8 +36,8 @@ repositories {
 }
 
 plugins {
-    kotlin("jvm") version "1.7.20" // or kotlin("multiplatform") or any other kotlin plugin
-    kotlin("plugin.serialization") version "1.7.20"
+    kotlin("jvm") version "1.9.24" // or kotlin("multiplatform") or any other kotlin plugin
+    kotlin("plugin.serialization") version "1.9.24"
     id("maven-publish")
     signing
     id("io.codearte.nexus-staging") version "0.30.0"

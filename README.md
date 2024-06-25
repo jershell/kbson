@@ -26,6 +26,9 @@ BSON types supported:
 build.gradle.kts
 ```kotlin
 dependencies {
+    // kotlin 1.9.24 & kotlinx.serialization 1.6.3
+    implementation("com.github.jershell:kbson:0.7.0")
+    
     // kotlin 1.7.20 & kotlinx.serialization 1.4.1
     implementation("com.github.jershell:kbson:0.6.0")
     
@@ -46,6 +49,12 @@ or
 build.gradle
 ```groovy
 dependencies {
+    // kotlin 1.9.24 & kotlinx.serialization 1.6.3
+    implementation 'com.github.jershell:kbson:0.7.0'
+
+    // kotlin 1.7.20 & kotlinx.serialization 1.4.1
+    implementation 'com.github.jershell:kbson:0.5.0'
+    
     // kotlin 1.7.20 & kotlinx.serialization 1.4.1
     implementation 'com.github.jershell:kbson:0.5.0'
     
