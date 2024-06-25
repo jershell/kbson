@@ -27,7 +27,7 @@ build.gradle.kts
 ```kotlin
 dependencies {
     // kotlin 1.7.20 & kotlinx.serialization 1.4.1
-    implementation("com.github.jershell:kbson:0.5.0")
+    implementation("com.github.jershell:kbson:0.5.1")
     
     // kotlin 1.6.21 & kotlinx.serialization 1.3.3
     implementation("com.github.jershell:kbson:0.4.6")
