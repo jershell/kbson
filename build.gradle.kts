@@ -9,7 +9,7 @@ buildscript {
     }
 }
 
-val LIBRARY_VERSION_NAME = "0.5.1"
+val LIBRARY_VERSION_NAME = "0.6.0"
 val GROUP_ID = "com.github.jershell"
 val ARTIFACT_ID = rootProject.name
 val BINTRAY_REPOSITORY = "generic"
